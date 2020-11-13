@@ -361,12 +361,6 @@ class gliderEnv3D(gym.Env):
 ########################################################################################################################
 
     def get_reward_and_done(self, timestep):
-        # set done flag
-        ground = (-self.state[2] <= 0)
-        timeout = (self.time >= self._params_task.WORKING_TIME)
-        outofsight  = (np.linalg.norm(self.state[0:2]) > self._params_agent.DISTANCE_MAX) \
-                      or (-self.state[2] > self._params_agent.HEIGHT_MAX)
-        done = (ground or timeout or outofsight or (not np.isfinite(self.state).all()))
 
         # set active vertex
         old_vertex = self.active_vertex
@@ -379,17 +373,26 @@ class gliderEnv3D(gym.Env):
         # assign reward
         if self.agent == 'vertex_tracker' and self.current_task == 'distance':
             reward = 200 / 3 if (self.active_vertex != old_vertex) else 0
+            outofsight = (np.linalg.norm(self.state[0:2]) > self._params_agent.DISTANCE_MAX) \
+                         or (-self.state[2] > self._params_agent.HEIGHT_MAX)
         elif self.agent == 'vertex_tracker' and self.current_task == 'speed':
             sys.exit("task not implemented, yet")
         elif self.agent == 'updraft_exploiter':
             reward = self.get_energy_reward()
+            outofsight = False
         elif self.agent == 'decision_maker':
             # reward = 200 / 3 if (self.active_vertex != old_vertex) else 0
             reward = 200 if (self.lap_counter > old_lap_counter) else 0
             # reward = 200 * self.lap_counter if (self.lap_counter > old_lap_counter) else 0
             # reward = reward - (self._params_task.WORKING_TIME - self.time) if ground else reward
+            outofsight = (-self.state[2] > self._params_agent.HEIGHT_MAX)
         else:
             sys.exit("not a valid agent passed for env setup")
+
+        # set done flag
+        ground = (-self.state[2] <= 0)
+        timeout = (self.time >= self._params_task.WORKING_TIME)
+        done = (ground or timeout or outofsight or (not np.isfinite(self.state).all()))
 
         return reward, done
 

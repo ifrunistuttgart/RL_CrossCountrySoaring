@@ -201,7 +201,7 @@ class gliderEnv3D(gym.Env):
         if self.agent == 'vertex_tracker':
             observation = self.get_full_observation()
         elif self.agent == 'updraft_exploiter':
-            observation = self.get_rel_updraft_positions()
+            observation = self.get_updraft_positions()
         elif self.agent == 'decision_maker':
             observation = self.get_sparse_observation()
         else:
@@ -284,7 +284,7 @@ class gliderEnv3D(gym.Env):
                        - self._params_agent.OBS_MEAN) / self._params_agent.OBS_STD
         return observation
 
-    def get_rel_updraft_positions(self):
+    def get_updraft_positions(self):
         # assign updraft data
         updraft_count = int(self._wind_fun._wind_data['updraft_count'])
         updraft_position = self._wind_fun._wind_data['updraft_position']
@@ -314,15 +314,14 @@ class gliderEnv3D(gym.Env):
             # assign return values
             rel_updraft_pos[k, :] = np.array([np.linalg.norm(g_aircraft2updraft), k_phi])
 
-        # sort the array in descending order wrt updraft distance (nearest updraft in last column)
-        rel_updraft_pos_sorted = rel_updraft_pos[np.argsort(-rel_updraft_pos[:, 0]), :]
+        # # sort the array in descending order wrt updraft distance (nearest updraft in last column)
+        # rel_updraft_pos_sorted = rel_updraft_pos[np.argsort(-rel_updraft_pos[:, 0]), :]
 
         # standardization
-        rel_updraft_pos_normalized = (rel_updraft_pos_sorted[:, 0] - self._params_wind.UPD_MEAN) / \
-                                     self._params_wind.UPD_STD
-        rel_updraft_pos_normalized = np.stack((rel_updraft_pos_normalized, rel_updraft_pos_sorted[:, 1] / np.pi), 1)
+        rel_updraft_pos_normalized = (rel_updraft_pos[:, 0] - self._params_wind.UPD_MEAN) / self._params_wind.UPD_STD
+        rel_updraft_pos_normalized = np.stack((rel_updraft_pos_normalized, rel_updraft_pos[:, 1] / np.pi), 1)
 
-        return rel_updraft_pos_normalized, rel_updraft_pos_sorted
+        return rel_updraft_pos_normalized
 
     def get_azimuth_wrt_r_frame(self):
         previous_vertex = np.mod((self.active_vertex - 1), 3)

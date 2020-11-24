@@ -12,22 +12,23 @@ from parameters import params_environment, params_triangle_soaring, params_decis
 from subtasks.updraft_exploiter import params_updraft_exploiter
 from subtasks.vertex_tracker import params_vertex_tracker
 
+
 class gliderEnv3D(gym.Env):
 
-########################################################################################################################
+    ########################################################################################################################
 
     def __init__(self, agent='vertex_tracker'):
 
         # instantiate parameters
-        self._params_glider     = params_environment.params_glider()
-        self._params_physics    = params_environment.params_physics()
-        self._params_sim        = params_environment.params_sim()
-        self._params_wind       = params_environment.params_wind()
-        self._params_task       = params_triangle_soaring.params_task()
+        self._params_glider = params_environment.params_glider()
+        self._params_physics = params_environment.params_physics()
+        self._params_sim = params_environment.params_sim()
+        self._params_wind = params_environment.params_wind()
+        self._params_task = params_triangle_soaring.params_task()
 
         if agent == 'vertex_tracker':
             self.agent = agent
-            self._params_agent  = params_vertex_tracker.params_agent()
+            self._params_agent = params_vertex_tracker.params_agent()
             self.current_task = self._params_task.TASK
         elif agent == 'updraft_exploiter':
             self.agent = agent
@@ -53,21 +54,21 @@ class gliderEnv3D(gym.Env):
         self.seed()
 
         # initialize further member variables
-        self.lb             = np.min(self._params_agent.ACTION_SPACE, 1)*(np.pi/180)
-        self.ub             = np.max(self._params_agent.ACTION_SPACE, 1)*(np.pi/180)
-        self.state          = None
-        self.time           = None
-        self.control        = None
-        self.active_vertex  = None
-        self.vertex_counter  = None
-        self.lap_counter     = None
-        self.viewer         = None
+        self.lb = np.min(self._params_agent.ACTION_SPACE, 1) * (np.pi / 180)
+        self.ub = np.max(self._params_agent.ACTION_SPACE, 1) * (np.pi / 180)
+        self.state = None
+        self.time = None
+        self.control = None
+        self.active_vertex = None
+        self.vertex_counter = None
+        self.lap_counter = None
+        self.viewer = None
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
-########################################################################################################################
+    ########################################################################################################################
 
     def reset(self):
         if self.agent == 'vertex_tracker':
@@ -88,7 +89,6 @@ class gliderEnv3D(gym.Env):
         else:
             sys.exit("not a valid agent passed for env setup")
 
-
         if self._params_wind.ALWAYS_RESET:
             self._wind_fun.reset_wind()
 
@@ -97,7 +97,7 @@ class gliderEnv3D(gym.Env):
         self.state = np.copy(initState)
         return self.state
 
-########################################################################################################################
+    ########################################################################################################################
 
     def step(self, action, timestep=None):
         timestep = self._params_agent.TIMESTEP_CRTL if not timestep else timestep
@@ -109,14 +109,14 @@ class gliderEnv3D(gym.Env):
         info = self.getInfo()
         return observation, reward, done, info
 
-########################################################################################################################
+    ########################################################################################################################
 
     def action2control(self, action):
         control = self.lb + (action + 1.) * 0.5 * (self.ub - self.lb)
         control = np.clip(control, self.lb, self.ub)
         return control
 
-########################################################################################################################
+    ########################################################################################################################
 
     def integrate(self, timestep):
         if self._integrator == 'euler':
@@ -133,7 +133,7 @@ class gliderEnv3D(gym.Env):
             self.time += r.t
             self.state = r.y
 
-########################################################################################################################
+    ########################################################################################################################
 
     def buildDynamic3D(self, t, x):
 
@@ -152,22 +152,23 @@ class gliderEnv3D(gym.Env):
 
         # air-path angles
         v_A_norm = np.maximum(np.linalg.norm(g_v_A), .1)
-        gamma_a = -np.arcsin(np.clip((g_v_A[2]/v_A_norm), -1, 1))
+        gamma_a = -np.arcsin(np.clip((g_v_A[2] / v_A_norm), -1, 1))
         chi_a = np.arctan2(g_v_A[1], g_v_A[0])
 
         # aerodynamic force in aerodynamic coordinates
-        cl = 2*np.pi*(self._params_glider.ST/(self._params_glider.ST + 2))*alpha
-        cd = self._params_glider.CD0 + (1/(np.pi*self._params_glider.ST*self._params_glider.OE))*np.power(cl, 2)
-        a_f_A = (self._params_physics.RHO/2)*self._params_glider.S*np.power(v_A_norm, 2)*np.array([[-cd], [0], [-cl]])
+        cl = 2 * np.pi * (self._params_glider.ST / (self._params_glider.ST + 2)) * alpha
+        cd = self._params_glider.CD0 + (1 / (np.pi * self._params_glider.ST * self._params_glider.OE)) * np.power(cl, 2)
+        a_f_A = (self._params_physics.RHO / 2) * self._params_glider.S * np.power(v_A_norm, 2) * np.array(
+            [[-cd], [0], [-cl]])
 
         # aerodynamic force in local NED coordinates
-        g_T_a = self.getRotationMatrix(-chi_a.item(), 3)\
-                @ self.getRotationMatrix(-gamma_a.item(), 2)\
+        g_T_a = self.getRotationMatrix(-chi_a.item(), 3) \
+                @ self.getRotationMatrix(-gamma_a.item(), 2) \
                 @ self.getRotationMatrix(-mu_a, 1)
         g_f_A = g_T_a @ a_f_A
 
         # track acceleration in local NED coordinates
-        g_a_K = (g_f_A/self._params_glider.M) + np.array([[0], [0], [self._params_physics.G]])
+        g_a_K = (g_f_A / self._params_glider.M) + np.array([[0], [0], [self._params_physics.G]])
 
         # state derivative
         xp = np.append(g_v_K, g_a_K)
@@ -195,7 +196,7 @@ class gliderEnv3D(gym.Env):
 
         return rotationMatrix
 
-########################################################################################################################
+    ########################################################################################################################
 
     def get_observation(self):
         if self.agent == 'vertex_tracker':
@@ -212,7 +213,7 @@ class gliderEnv3D(gym.Env):
     def get_full_observation(self):
         # vector from previous vertex to active vertex in g-coordinates (-> r-frame x-axis = g_ref/norm(g_ref))
         previous_vertex = np.mod((self.active_vertex - 1), 3)
-        g_previous2active = self._params_task.TRIANGLE[:, (self.active_vertex - 1)]\
+        g_previous2active = self._params_task.TRIANGLE[:, (self.active_vertex - 1)] \
                             - self._params_task.TRIANGLE[:, (previous_vertex - 1)]
 
         # polar angle of r-frame wrt g-frame
@@ -266,7 +267,7 @@ class gliderEnv3D(gym.Env):
 
         # distance to finish line
         if self.vertex_counter != 3:
-            dist_to_finish = dist_to_active_vertex + (3 - self.active_vertex)*len_legs + 0.5*len_base
+            dist_to_finish = dist_to_active_vertex + (3 - self.active_vertex) * len_legs + 0.5 * len_base
         else:
             T_pos_ac = np.transpose(self._params_task.G_T_T) @ self.state[0:2].reshape(2, 1)
             dist_to_finish = T_pos_ac[1].item() - self._params_task.FINISH_LINE[1].item()
@@ -314,12 +315,13 @@ class gliderEnv3D(gym.Env):
             # assign return values
             rel_updraft_pos[k, :] = np.array([np.linalg.norm(g_aircraft2updraft), k_phi])
 
-        # # sort the array in descending order wrt updraft distance (nearest updraft in last column)
-        # rel_updraft_pos_sorted = rel_updraft_pos[np.argsort(-rel_updraft_pos[:, 0]), :]
+        # sort the array in descending order wrt updraft distance (nearest updraft in last column)
+        rel_updraft_pos_sorted = rel_updraft_pos[np.argsort(-rel_updraft_pos[:, 0]), :]
 
         # standardization
-        rel_updraft_pos_normalized = (rel_updraft_pos[:, 0] - self._params_wind.UPD_MEAN) / self._params_wind.UPD_STD
-        rel_updraft_pos_normalized = np.stack((rel_updraft_pos_normalized, rel_updraft_pos[:, 1] / np.pi), 1)
+        rel_updraft_pos_normalized = (rel_updraft_pos_sorted[:, 0] - self._params_wind.UPD_MEAN) / \
+                                     self._params_wind.UPD_STD
+        rel_updraft_pos_normalized = np.stack((rel_updraft_pos_normalized, rel_updraft_pos_sorted[:, 1] / np.pi), 1)
 
         return rel_updraft_pos_normalized
 
@@ -349,15 +351,15 @@ class gliderEnv3D(gym.Env):
         Matthi suggests: mod(angle + pi, 2*pi) - pi
         """
         if angle > np.pi:
-            wrappend_angle = angle - (2*np.pi)
+            wrappend_angle = angle - (2 * np.pi)
         elif angle < (-np.pi):
-            wrappend_angle = angle + (2*np.pi)
+            wrappend_angle = angle + (2 * np.pi)
         else:
             wrappend_angle = angle
 
         return wrappend_angle
 
-########################################################################################################################
+    ########################################################################################################################
 
     def get_reward_and_done(self, timestep):
 
@@ -450,8 +452,8 @@ class gliderEnv3D(gym.Env):
         cd = self._params_glider.CD0 + (1 / (np.pi * self._params_glider.ST * self._params_glider.OE)) * np.power(cl, 2)
         a_f_Ax = (self._params_physics.RHO / 2) * self._params_glider.S * np.power(v_A_norm, 2) * (-cd)
 
-        a_T_g = self.getRotationMatrix(mu_a, 1)\
-                @ self.getRotationMatrix(gamma_a.item(), 2)\
+        a_T_g = self.getRotationMatrix(mu_a, 1) \
+                @ self.getRotationMatrix(gamma_a.item(), 2) \
                 @ self.getRotationMatrix(-chi_a.item(), 3)
 
         # energy-equivalent climb rate
@@ -470,14 +472,14 @@ class gliderEnv3D(gym.Env):
 
     def get_best_glide(self):
         alpha_bestGlide = ((self._params_glider.ST + 2)
-                           * np.sqrt(self._params_glider.CD0*self._params_glider.OE/self._params_glider.ST))\
-                           / (2*np.sqrt(np.pi))
-        cL_bestGlide = (2*np.pi*alpha_bestGlide*self._params_glider.ST)/(self._params_glider.ST + 2)
-        cD_bestGlide = self._params_glider.CD0\
+                           * np.sqrt(self._params_glider.CD0 * self._params_glider.OE / self._params_glider.ST)) \
+                          / (2 * np.sqrt(np.pi))
+        cL_bestGlide = (2 * np.pi * alpha_bestGlide * self._params_glider.ST) / (self._params_glider.ST + 2)
+        cD_bestGlide = self._params_glider.CD0 \
                        + (1 / (np.pi * self._params_glider.ST * self._params_glider.OE)) * np.power(cL_bestGlide, 2)
 
-        V_bestGlide = np.sqrt((2*self._params_glider.M*self._params_physics.G)
-                              /(self._params_physics.RHO*self._params_glider.S*cL_bestGlide))
+        V_bestGlide = np.sqrt((2 * self._params_glider.M * self._params_physics.G)
+                              / (self._params_physics.RHO * self._params_glider.S * cL_bestGlide))
         gamma_bestGlide = -cD_bestGlide / cL_bestGlide
 
         return V_bestGlide, gamma_bestGlide
@@ -495,7 +497,7 @@ class gliderEnv3D(gym.Env):
 
         return reward
 
-#########################################################################################################
+    #########################################################################################################
 
     def getInfo(self):
         x = self.state

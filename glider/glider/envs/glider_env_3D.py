@@ -316,12 +316,12 @@ class gliderEnv3D(gym.Env):
             rel_updraft_pos[k, :] = np.array([np.linalg.norm(g_aircraft2updraft), k_phi])
 
         # sort the array in descending order wrt updraft distance (nearest updraft in last column)
-        rel_updraft_pos_sorted = rel_updraft_pos[np.argsort(-rel_updraft_pos[:, 0]), :]
+        # rel_updraft_pos_sorted = rel_updraft_pos[np.argsort(-rel_updraft_pos[:, 0]), :]
 
         # standardization
-        rel_updraft_pos_normalized = (rel_updraft_pos_sorted[:, 0] - self._params_wind.UPD_MEAN) / \
+        rel_updraft_pos_normalized = (rel_updraft_pos[:, 0] - self._params_wind.UPD_MEAN) / \
                                      self._params_wind.UPD_STD
-        rel_updraft_pos_normalized = np.stack((rel_updraft_pos_normalized, rel_updraft_pos_sorted[:, 1] / np.pi), 1)
+        rel_updraft_pos_normalized = np.stack((rel_updraft_pos_normalized, rel_updraft_pos[:, 1] / np.pi), 1)
 
         return rel_updraft_pos_normalized
 

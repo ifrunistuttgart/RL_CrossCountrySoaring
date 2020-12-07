@@ -26,8 +26,8 @@ class params_wind:
 
 class params_glider:
     def __init__(self):
-        self.M              = 3.366                 # aircraft mass                 (kg)
-        self.S              = .568                  # reference area                (m2)
+        self.M              = 4.200                 # aircraft mass                 (kg)
+        self.S              = .468                  # reference area                (m2)
         self.ST             = 10.2                  # aspect ratio                  (-)
         self.OE             = .9                    # oswald factor                 (-)
         self.CD0            = .015                  # zero lift drag coefficient    (-)

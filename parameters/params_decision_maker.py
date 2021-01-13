@@ -5,7 +5,7 @@ from parameters.params_triangle_soaring import params_task
 
 class params_rl:
     def __init__(self):
-        self.N_EPISODES         = 5e3           # total number of episodes to be evaluated
+        self.N_ITERATIONS       = 2e3           # total number of policy iterations during training
         self.BATCHSIZE          = 4096          # size of bach (i.e, length of rollout) before policy update
         self.SEQ_LEN            = 256           # size of mini-batch for SGD (evaluated as a sequence, due to LSTM)
         self.OVERLAP            = 128           # shift tuples for overlapping sequences (shift = seq_len - overlap)
@@ -78,4 +78,4 @@ class params_agent:
 class params_logging:
     def __init__(self):
         self.PRINT_INTERVAL = 10                    # interval wrt # epi to print score and save avg. return to file
-        self.SAVE_INTERVAL  = 500                   # interval wrt # epi to save actor/critic net and make a plot
+        self.SAVE_INTERVAL  = 250                   # interval wrt # epi to save actor/critic net and make a plot

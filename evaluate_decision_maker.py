@@ -9,7 +9,7 @@ import warnings
 
 from parameters import params_triangle_soaring, params_environment
 
-def main(env, controller, n_epi, params_agent, validation_mask=False):
+def main(env, controller, n_iter, params_agent, validation_mask=False):
 
     state = env.reset()
     obs = env.get_observation()
@@ -25,9 +25,6 @@ def main(env, controller, n_epi, params_agent, validation_mask=False):
     _params_wind    = params_environment.params_wind()
 
     while not done:
-        # # format state tensor
-        # state = torch.FloatTensor(observation.reshape(1, 1, -1))  # sequence=1 x batch=1 x observations
-
         # evaluate and apply policy
         action, _, _, _, lstm_hidden_out = controller.select_action(torch.FloatTensor(obs), lstm_hidden_in,
                                                                     validation_mask=validation_mask)
@@ -45,8 +42,8 @@ def main(env, controller, n_epi, params_agent, validation_mask=False):
     # plot position and control trajectory
     fig = plt.figure()
     fig.set_size_inches(11.69, 8.27)  # DinA4
-    fig.suptitle("Sample after {} episodes of training:\nVertices hit: {}, Return: {:.1f}, Score: {}"
-                 .format(n_epi, (env.lap_counter*3 + env.vertex_counter), ret, env.lap_counter*200))
+    fig.suptitle("Sample after {} policy iterations:\nVertices hit: {}, Return: {:.1f}, Score: {}"
+                 .format(n_iter, (env.lap_counter*3 + env.vertex_counter), ret, env.lap_counter*200))
 
     grid = gridspec.GridSpec(ncols=2, nrows=3, figure=fig)
     ax1 = fig.add_subplot(grid[0:2, 0])
@@ -112,7 +109,7 @@ def main(env, controller, n_epi, params_agent, validation_mask=False):
 
     warnings.filterwarnings("ignore", category=UserWarning, module="backend_interagg")
     grid.tight_layout(fig, rect=[0, 0.03, 1, 0.95])
-    plt.savefig("resultant_trajectory_episode_{}".format(n_epi) + ".png", dpi=400)
+    plt.savefig("resultant_trajectory_iter_{}".format(n_iter) + ".png", dpi=400)
     plt.show()
 
     plt.close(fig)

@@ -7,7 +7,9 @@ import torch.nn as nn
 from torch.distributions import Normal
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 from torch.utils.data import Dataset, TensorDataset
+import collections
 
 import evaluate_decision_maker
 from parameters import params_environment, params_triangle_soaring, params_decision_maker
@@ -241,7 +243,7 @@ class PPO:
         action_vertex_tracker = self.vertex_tracker.select_action(self.env.get_full_observation)
 
         # evaluate updraft exploiter
-        normalized_updraft_positions, _ = self.env.get_rel_updraft_positions()
+        normalized_updraft_positions = self.env.get_updraft_positions()
         observation = torch.FloatTensor(normalized_updraft_positions).view(1, -1, 2).to(device)
         action_updraft_exploiter = self.updraft_exploiter.act(observation,
                                                               memory=None,
@@ -323,10 +325,10 @@ def main():
     # set up training
     env = gym.make('glider3D-v0', agent='decision_maker')
 
-    # instantiate vertex tracker and updraft exploiter
+    # instantiate vertex-tracker and updraft-exploiter
     waypoint_controller = Controller_Wrapper(env)
     updraft_exploiter = model_updraft_exploiter.ActorCritic().to(device)
-    updraft_exploiter.load_state_dict(torch.load("updraft_exploiter_actor_critic_final_24-October-2020_18-13.pt"))
+    updraft_exploiter.load_state_dict(torch.load("updraft_exploiter_actor_critic_final_17-December-2020_11-06.pt"))
 
     # instantiate agent
     ppo = PPO(waypoint_controller, updraft_exploiter, env)
@@ -372,90 +374,113 @@ def main():
         env.seed(_params_rl.SEED)
         np.random.seed(_params_rl.SEED)
 
+    # set up file to save average returns and scores
+    return_file = open("returnFile_running.dat", "w")
+    return_file.write("iterations,episodes,avg_returns,avg_scores\n")
+    return_file.close()
+
     # initialize logging variables
-    returns = []
-    scores = []
+    returns = collections.deque(maxlen=10)
+    scores = collections.deque(maxlen=10)
     average_returns = []
     average_scores = []
     policy_iterations = 0
-    n_interactions = 0
+    episodes = 0
+    interactions = 0
+    ret = 0
+
+    # (re-)set env and model
+    env.reset()
+    obs = env.get_observation()
+    lstm_in = ppo.model.reset_lstm()
 
     # training loop
-    for n_epi in range(int(_params_rl.N_EPISODES + 1)):
-        env.reset()
-        lstm_in = ppo.model.reset_lstm()
-        done = False
-        ret = 0
-        obs = env.get_observation()
+    while policy_iterations < (int(_params_rl.N_ITERATIONS)):
 
-        while not done:
-            with torch.no_grad():
+        # rollout s.t. current policy
+        with torch.no_grad():
+            action_env, action_agent, action_agent_logprob, state_value, lstm_out = \
+                ppo.select_action(torch.FloatTensor(obs), lstm_in)
+            next_obs, reward, done, _ = env.step(action_env)
 
-                # run policy
-                action_env, action_agent, action_agent_logprob, state_value, lstm_out = \
-                    ppo.select_action(torch.FloatTensor(obs), lstm_in)
-                next_obs, reward, done, _ = env.step(action_env)
+        # store data in ppo.buffer
+        ppo.buffer.store(obs=torch.FloatTensor(obs).to(device), act=action_agent.flatten(),
+                         rew=torch.FloatTensor([reward/100]), val=torch.FloatTensor([state_value]),
+                         logp=action_agent_logprob.flatten(), lstm_h_in=lstm_in[0].flatten(),
+                         lstm_c_in=lstm_in[1].flatten(), done=torch.FloatTensor([done]))
 
-                # store data in ppo.buffer
-                ppo.buffer.store(obs=torch.FloatTensor(obs).to(device), act=action_agent.flatten(),
-                                 rew=torch.FloatTensor([reward/100]), val=torch.FloatTensor([state_value]),
-                                 logp=action_agent_logprob.flatten(), lstm_h_in=lstm_in[0].flatten(),
-                                 lstm_c_in=lstm_in[1].flatten(), done=torch.FloatTensor([done]))
+        # update variables each interaction
+        obs = next_obs
+        lstm_in = lstm_out
+        ret += reward
+        interactions += 1
 
-                # update variables each interaction
-                obs = next_obs
-                lstm_in = lstm_out
-                ret += reward
-                n_interactions += 1
+        # store results and reset experiment if episode is completed
+        if done:
+            ppo.buffer.finish_path(torch.FloatTensor([0]).to(device))
+            returns.append(ret)
+            scores.append(env.lap_counter * 200)
+            episodes += 1
+            ret = 0
+            env.reset()
+            lstm_in = ppo.model.reset_lstm()
+            obs = env.get_observation()
 
-            # update policy every BATCHSIZE tuples stored in buffer
-            if n_interactions != 0 and n_interactions % _params_rl.BATCHSIZE == 0:
-                next_value = ppo.model.critic(torch.FloatTensor(obs)).detach()
-                ppo.buffer.finish_path(next_value.flatten())
-                # ppo.model.train()
-                ppo.update()
-                # ppo.policy.eval()
-                n_interactions = 0
-                policy_iterations += 1
+            n_mean = _params_logging.PRINT_INTERVAL if len(returns) >= _params_logging.PRINT_INTERVAL else len(returns)
+            average_returns.append(np.convolve(list(returns)[-n_mean:], np.ones((n_mean,)) / n_mean, mode='valid')[0])
+            average_scores.append(np.convolve(list(scores)[-n_mean:], np.ones((n_mean,)) / n_mean, mode='valid')[0])
 
-            # stop rollout if episode is completed
-            if done:
-                ppo.buffer.finish_path(torch.FloatTensor([0]).to(device))
-                returns.append(ret)
-                scores.append(env.lap_counter * 200)
-                break
+        # update policy every BATCHSIZE interactions
+        if interactions != 0 and interactions % _params_rl.BATCHSIZE == 0:
+            next_value = ppo.model.critic(torch.FloatTensor(obs)).detach()
+            ppo.buffer.finish_path(next_value.flatten())
+            ppo.model.train()
+            ppo.update()
+            ppo.model.eval()
+            interactions = 0
+            policy_iterations += 1
 
-        n_mean = _params_logging.PRINT_INTERVAL if len(returns) >= _params_logging.PRINT_INTERVAL else len(returns)
-        average_returns.append(np.convolve(returns[-n_mean:], np.ones((n_mean,)) / n_mean, mode='valid')[0])
-        average_scores.append(np.convolve(scores[-n_mean:], np.ones((n_mean,)) / n_mean, mode='valid')[0])
+            # print results to display and log them to file
+            if len(average_returns) and policy_iterations % _params_logging.PRINT_INTERVAL == 0:
+                print("# policy iteration: {}/{} \t\t"
+                      "avg. return over last 10 episodes: {:06.1f} \t\t"
+                      "avg. score over last 10 episodes: {:06.1f}"
+                      .format(policy_iterations, int(_params_rl.N_ITERATIONS), average_returns[-1], average_scores[-1]))
 
-        if n_epi % _params_logging.PRINT_INTERVAL == 0:
-            print("# episode: {}/{} \t\t avg. ret. (last {} eps): {:06.1f} \t\t avg. score (last {} eps): {:06.1f}"
-                  .format(n_epi, int(_params_rl.N_EPISODES), _params_logging.PRINT_INTERVAL, average_returns[-1],
-                          _params_logging.PRINT_INTERVAL, average_scores[-1]))
-            with open("returnFile_running.dat", "a+") as returnFile:
-                returnFile.write(format(n_epi) + "," + format(policy_iterations) + "," +
-                                 '{:.1f}'.format(average_returns[-1]) + "," + '{:.1f}'.format(average_scores[-1]) +
-                                 "\n")
+                with open("returnFile_running.dat", "a+") as return_file:
+                    return_file.write(format(policy_iterations) + "," + format(episodes) + "," +
+                                     '{:.1f}'.format(average_returns[-1]) + "," + '{:.1f}'.format(average_scores[-1]) +
+                                     "\n")
 
-        if n_epi % _params_logging.SAVE_INTERVAL == 0:
-            torch.save(ppo.model.actor.state_dict(), "decision_maker_actor_episode_{}".format(n_epi) + ".pt")
-            torch.save(ppo.model.critic.state_dict(), "decision_maker_critic_episode_{}".format(n_epi) + ".pt")
-            evaluate_decision_maker.main(env, ppo, n_epi, _params_agent, validation_mask=True)
+            # save model and create sample of system behavior
+            if policy_iterations % _params_logging.SAVE_INTERVAL == 0:
+                torch.save(ppo.model.actor.state_dict(),
+                           "decision_maker_actor_iter_{}".format(policy_iterations) + ".pt")
+                torch.save(ppo.model.critic.state_dict(),
+                           "decision_maker_critic_iter_{}".format(policy_iterations) + ".pt")
+                evaluate_decision_maker.main(env, ppo, policy_iterations, _params_agent, validation_mask=True)
 
-    # display results
+    # display final results
     now = datetime.datetime.now()
-    plt.figure("average returns")
-    plt.plot(average_returns)
+    returns_to_plot = pd.read_csv('returnFile_running.dat')
+    returns_to_plot.plot(x='iterations', y='avg_returns')
+    plt.title("evolution of average returns")
+    plt.xlabel("policy iterations (-)")
     plt.ylabel("average returns (-)")
-    plt.xlabel("episodes (-)")
     plt.grid(True)
     plt.savefig("average_returns_" + now.strftime("%d-%B-%Y_%H-%M") + ".png")
     plt.show()
 
-    # save actor-critic
+    # save final model
     torch.save(ppo.model.actor.state_dict(), "decision_maker_actor_final_" + now.strftime("%d-%B-%Y_%H-%M") + ".pt")
     torch.save(ppo.model.critic.state_dict(), "decision_maker_critic_final_" + now.strftime("%d-%B-%Y_%H-%M") + ".pt")
+
+    # rename parameter file consistently
+    os.rename(parameterFile.name, "parameters_" + now.strftime("%d-%B-%Y_%H-%M") + ".txt")
+
+    # rename return file consistently
+    return_file.close()
+    os.rename(return_file.name, "average_returns_" + now.strftime("%d-%B-%Y_%H-%M") + ".dat")
 
     env.close()
 

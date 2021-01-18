@@ -14,7 +14,7 @@ class params_rl:
         self.K_EPOCH            = 10            # number of policy updates on single batch
         self.LEARNING_RATE_PI   = 1e-5          # learning rate for actor optimizer
         self.LEARNING_RATE_VF   = 1e-4          # learning rate for critic optimizer
-        self.GAMMA              = 0.99          # discount factor for advantage estimation
+        self.GAMMA              = 0.997         # discount factor for advantage estimation
         self.LAMBDA             = 0.96          # only relevant if GAE is implemented
         self.EPS_CLIP           = 0.2           # PPO clipping value
         self.SIGMA              = .2            # std-deviation for exploration (0.1 -> 0.6 deg after scaling)
@@ -42,17 +42,9 @@ class params_agent:
         self.INITIAL_STATE = np.append(np.array([0., 0., -400.]),
                                        np.append(_params_task.G_T_T @ np.array([[0.], [15.]]), 1.))
 
-        # std-dev. for state initialization (validation runs)
+        # std-dev. for state initialization
         self.INITIAL_STD = np.append(np.append(_params_task.G_T_T @ np.array([[2.], [0.]]), 5.),
                                      np.array([2., 2., .5]))
-
-        # # initial state space [MIN MAX] (training runs)
-        # self.INITIAL_SPACE = np.array([[-500, 500],
-        #                                [-500, 500],
-        #                                [-405, -50],
-        #                                [-10, 10],
-        #                                [-10, 10],
-        #                                [0.5, 1.5]])
 
         # bank angle and AoA constraint to; CAUTION: Needs to be consistent to vertex_tracker & updraft_exploiter!
         self.ACTION_SPACE   = np.array([[-45, 45],

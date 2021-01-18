@@ -235,8 +235,8 @@ class PPO:
         action_agent, action_agent_logprob, lstm_hidden = self.model.act(state, lstm_hidden,
                                                                           validation_mask=validation_mask)
 
-        # induce bias: height=0 leads to p_exploit=1, initial_height (400 m) leads to p_exploit=0
-        inductive_bias = -1 / 2 * (state[1] - 1)
+        # induce bias: height=0 leads to bias->1, initial_height (400 m) leads to bias->0
+        inductive_bias = .5 * (1 - torch.tanh(10 * state[1]))
         p_exploit = np.clip(action_agent.item() + inductive_bias.item(), 0, 1)
 
         # evaluate vertex tracker

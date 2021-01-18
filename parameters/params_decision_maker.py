@@ -12,9 +12,9 @@ class params_rl:
         self.SEQ_LEN_MIN        = 64            # minimum sequence length to be evaluated (if sliced due to episode end)
         self.N_BURNIN           = 16            # use first steps of each sequence to "burn in" hidden state
         self.K_EPOCH            = 10            # number of policy updates on single batch
-        self.LEARNING_RATE_PI   = 5e-5          # learning rate for actor optimizer
+        self.LEARNING_RATE_PI   = 1e-5          # learning rate for actor optimizer
         self.LEARNING_RATE_VF   = 1e-4          # learning rate for critic optimizer
-        self.GAMMA              = 0.997         # discount factor for advantage estimation
+        self.GAMMA              = 0.99          # discount factor for advantage estimation
         self.LAMBDA             = 0.96          # only relevant if GAE is implemented
         self.EPS_CLIP           = 0.2           # PPO clipping value
         self.SIGMA              = .2            # std-deviation for exploration (0.1 -> 0.6 deg after scaling)

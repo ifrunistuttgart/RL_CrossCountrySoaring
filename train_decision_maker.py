@@ -389,6 +389,9 @@ def main():
     interactions = 0
     ret = 0
 
+    # create sample of untrained system behavior
+    evaluate_decision_maker.main(env, ppo, policy_iterations, _params_agent, validation_mask=True)
+
     # (re-)set env and model
     env.reset()
     obs = env.get_observation()

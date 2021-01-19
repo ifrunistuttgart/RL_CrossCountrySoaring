@@ -236,7 +236,7 @@ class PPO:
                                                                           validation_mask=validation_mask)
 
         # induce bias: height=0 leads to bias->1, initial_height (400 m) leads to bias->0
-        inductive_bias = .5 * (1 - torch.tanh(10 * state[1]))
+        inductive_bias = .5 * (1 - torch.tanh(state[1]))
         p_exploit = np.clip(action_agent.item() + inductive_bias.item(), 0, 1)
 
         # evaluate vertex tracker

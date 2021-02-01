@@ -10,3 +10,5 @@ PPO_continuous.py
 archive/
 *experiment*
 *.rej
+matlab_export/mat_files/
+matlab_export/*.pt

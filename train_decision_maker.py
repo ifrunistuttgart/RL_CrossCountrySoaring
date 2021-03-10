@@ -249,8 +249,8 @@ class PPO:
                                                               memory=None,
                                                               validation_mask=True).cpu().data.numpy().flatten()
 
-        # mix the actions
-        action_env = p_exploit * action_updraft_exploiter + (1 - p_exploit) * action_vertex_tracker
+        # switch between the sub-agents' actions
+        action_env = action_updraft_exploiter if (p_exploit > .5) else action_vertex_tracker
 
         # evaluate critic
         state_value = self.model.critic(state)
@@ -463,18 +463,19 @@ def main():
                            "decision_maker_critic_iter_{}".format(policy_iterations) + ".pt")
                 evaluate_decision_maker.main(env, ppo, policy_iterations, _params_agent, validation_mask=True)
 
-    # display final results
-    now = datetime.datetime.now()
-    returns_to_plot = pd.read_csv('returnFile_running.dat')
-    returns_to_plot.plot(x='iterations', y='avg_returns')
-    plt.title("evolution of average returns")
-    plt.xlabel("policy iterations (-)")
-    plt.ylabel("average returns (-)")
-    plt.grid(True)
-    plt.savefig("average_returns_" + now.strftime("%d-%B-%Y_%H-%M") + ".png")
-    plt.show()
+                fig, ax = plt.subplots()
+                returns_to_plot = pd.read_csv('returnFile_running.dat')
+                returns_to_plot.plot(x='iterations', y='avg_returns', ax=ax)
+                returns_to_plot.plot(x='iterations', y='avg_scores', ax=ax)
+                plt.title("learning success")
+                plt.xlabel("policy iterations (-)")
+                plt.ylabel("average return/score (-)")
+                plt.grid(True)
+                plt.savefig("average_returns_{}".format(policy_iterations) + ".png")
+                plt.show()
 
     # save final model
+    now = datetime.datetime.now()
     torch.save(ppo.model.actor.state_dict(), "decision_maker_actor_final_" + now.strftime("%d-%B-%Y_%H-%M") + ".pt")
     torch.save(ppo.model.critic.state_dict(), "decision_maker_critic_final_" + now.strftime("%d-%B-%Y_%H-%M") + ".pt")
 

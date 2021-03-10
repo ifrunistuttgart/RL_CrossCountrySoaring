@@ -373,8 +373,7 @@ class gliderEnv3D(gym.Env):
 
         # set flags relevant for done flag
         ground = (-self.state[2] <= 0)
-        outofsight = (np.linalg.norm(self.state[0:2]) > self._params_agent.DISTANCE_MAX) \
-                     or (-self.state[2] > self._params_agent.HEIGHT_MAX)
+        outofsight = (-self.state[2] > self._params_agent.HEIGHT_MAX)
 
         # assign reward
         if self.agent == 'vertex_tracker' and self.current_task == 'distance':
@@ -389,7 +388,7 @@ class gliderEnv3D(gym.Env):
         elif self.agent == 'decision_maker':
             # reward = 200 / 3 if (self.active_vertex != old_vertex) else 0
             reward = 200 if (self.lap_counter > old_lap_counter) else 0
-            outofsight = False
+            reward = reward - (self._params_task.WORKING_TIME - self.time) if (ground or outofsight) else reward
             timeout = (self.time >= self._params_task.WORKING_TIME)
         else:
             sys.exit("not a valid agent passed for env setup")

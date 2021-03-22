@@ -313,12 +313,14 @@ class PPO:
                 # policy gradient step
                 self.pi_optimizer.zero_grad()
                 loss_pi.backward()
+                nn.utils.clip_grad_norm_(self.model.actor.parameters(), 1.0)
                 self.pi_optimizer.step()
 
                 # value function gradient step
                 loss_vf = ((self.model.critic(obs_seq) - ret_seq)**2).mean()
                 self.vf_optimizer.zero_grad()
                 loss_vf.backward()
+                nn.utils.clip_grad_norm_(self.model.critic.parameters(), 1.0)
                 self.vf_optimizer.step()
 
 def main():

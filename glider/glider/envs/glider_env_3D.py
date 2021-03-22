@@ -388,8 +388,9 @@ class gliderEnv3D(gym.Env):
         elif self.agent == 'decision_maker':
             # reward = 200 / 3 if (self.active_vertex != old_vertex) else 0
             reward = 200 if (self.lap_counter > old_lap_counter) else 0
-            reward = reward - (self._params_task.WORKING_TIME - self.time) if (ground or outofsight) else reward
+            # reward = reward - (self._params_task.WORKING_TIME - self.time) if (ground or outofsight) else reward
             timeout = (self.time >= self._params_task.WORKING_TIME)
+            # reward = reward - (-self.state[2]) if timeout else reward
         else:
             sys.exit("not a valid agent passed for env setup")
 

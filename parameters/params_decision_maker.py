@@ -5,7 +5,7 @@ from parameters.params_triangle_soaring import params_task
 
 class params_rl:
     def __init__(self):
-        self.N_ITERATIONS       = 2e3           # total number of policy iterations during training
+        self.N_ITERATIONS       = 4e3           # total number of policy iterations during training
         self.BATCHSIZE          = 4096          # size of bach (i.e, length of rollout) before policy update
         self.SEQ_LEN            = 256           # size of mini-batch for SGD (evaluated as a sequence, due to LSTM)
         self.OVERLAP            = 128           # shift tuples for overlapping sequences (shift = seq_len - overlap)

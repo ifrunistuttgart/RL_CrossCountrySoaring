@@ -26,8 +26,8 @@ class ActorCritic(nn.Module):
         super().__init__()
 
         # instantiate parameters
-        self._params_model = params_decision_maker.params_model()
-        self._params_rl = params_decision_maker.params_rl()
+        self._params_model = params_decision_maker.ModelParameters()
+        self._params_rl = params_decision_maker.LearningParameters()
 
         # setup ANN
         self.actor = LSTMActor(obs_dim=self._params_model.DIM_IN, act_dim=self._params_model.DIM_OUT,
@@ -56,6 +56,7 @@ class ActorCritic(nn.Module):
     def reset_lstm(self):
         return torch.zeros(1, 1, self._params_model.DIM_LSTM, device=device), \
                torch.zeros(1, 1, self._params_model.DIM_LSTM, device=device)
+
 
 class LSTMActor(nn.Module):
     def __init__(self, obs_dim, act_dim, hidden_size, lstm_size):
@@ -209,8 +210,8 @@ class MyDataset(Dataset):
 class PPO:
     def __init__(self, vertex_tracker, updraft_exploiter, environment):
         # instantiate parameters
-        self._params_rl = params_decision_maker.params_rl()
-        self._params_model = params_decision_maker.params_model()
+        self._params_rl = params_decision_maker.LearningParameters()
+        self._params_model = params_decision_maker.ModelParameters()
 
         # instantiate buffer for rollout
         self.buffer = PPOBuffer(self._params_model.DIM_IN, self._params_model.DIM_OUT, self._params_rl.BATCHSIZE,
@@ -294,20 +295,20 @@ class PPO:
                 # "burn in" lstm hidden state (cf. "R2D2")
                 with torch.no_grad():
                     _, (lstm_h_burned_in, lstm_c_burned_in) =\
-                        self.model.actor(obs_seq[0:self._params_rl.N_BURNIN, :], (lstm_h_in_seq[0], lstm_c_in_seq[0]))
+                        self.model.actor(obs_seq[0:self._params_rl.N_BURN_IN, :], (lstm_h_in_seq[0], lstm_c_in_seq[0]))
 
                 # evaluate policy for remainder sampled sequence of states and actions
-                logp_eval = self.model.evaluate_actor(obs_seq[self._params_rl.N_BURNIN:, :],
-                                                      act_seq[self._params_rl.N_BURNIN:],
+                logp_eval = self.model.evaluate_actor(obs_seq[self._params_rl.N_BURN_IN:, :],
+                                                      act_seq[self._params_rl.N_BURN_IN:],
                                                       (lstm_h_burned_in, lstm_c_burned_in))
 
                 # ppo ratio
-                ratios = torch.exp(logp_eval - logp_seq[self._params_rl.N_BURNIN:])
+                ratios = torch.exp(logp_eval - logp_seq[self._params_rl.N_BURN_IN:])
 
                 # surrogate loss (PPO)
-                surr1 = ratios * adv_seq[self._params_rl.N_BURNIN:]
+                surr1 = ratios * adv_seq[self._params_rl.N_BURN_IN:]
                 surr2 = torch.clamp(ratios, 1 - self._params_rl.EPS_CLIP, 1 + self._params_rl.EPS_CLIP)\
-                        * adv_seq[self._params_rl.N_BURNIN:]
+                        * adv_seq[self._params_rl.N_BURN_IN:]
                 loss_pi = -torch.min(surr1, surr2).mean()
 
                 # policy gradient step
@@ -336,9 +337,9 @@ def main():
     ppo = PPO(waypoint_controller, updraft_exploiter, env)
 
     # load parameters
-    _params_rl = params_decision_maker.params_rl()
-    _params_agent = params_decision_maker.params_agent()
-    _params_logging = params_decision_maker.params_logging()
+    _params_rl = params_decision_maker.LearningParameters()
+    _params_agent = params_decision_maker.AgentParameters()
+    _params_logging = params_decision_maker.LoggingParameters()
 
     # create folder to store data for the experiment running
     experimentID = 1
@@ -359,7 +360,7 @@ def main():
     parameterFile = open("parameterFile.txt", "w")
     parameterFile.write(
         format(vars(_params_rl)) + "\n" +
-        format(vars(params_decision_maker.params_model())) + "\n" +
+        format(vars(params_decision_maker.ModelParameters())) + "\n" +
         format(vars(_params_agent)) + "\n" +
         format(vars(_params_logging)) + "\n\n" +
         format(vars(params_triangle_soaring.params_task())) + "\n\n" +

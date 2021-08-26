@@ -36,7 +36,7 @@ class gliderEnv3D(gym.Env):
             self.current_task = 'exploitation'
         elif agent == 'decision_maker':
             self.agent = agent
-            self._params_agent = params_decision_maker.params_agent()
+            self._params_agent = params_decision_maker.AgentParameters()
             self.current_task = self._params_task.TASK
         else:
             sys.exit("not a valid agent passed for env setup")
@@ -100,7 +100,7 @@ class gliderEnv3D(gym.Env):
     ########################################################################################################################
 
     def step(self, action, timestep=None):
-        timestep = self._params_agent.TIMESTEP_CRTL if not timestep else timestep
+        timestep = self._params_agent.TIMESTEP_CTRL if not timestep else timestep
 
         self.control = self.action2control(action)
         self.integrate(timestep)
@@ -468,7 +468,7 @@ class gliderEnv3D(gym.Env):
         w_normalized = w.item() - V_bestGlide * gamma_bestGlide
 
         # delta normalized energy-equivalent climb rate
-        energyReward = w_normalized * self._params_agent.TIMESTEP_CRTL
+        energyReward = w_normalized * self._params_agent.TIMESTEP_CTRL
 
         return energyReward
 

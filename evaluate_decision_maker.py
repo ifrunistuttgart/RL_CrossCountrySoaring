@@ -51,7 +51,7 @@ def main(env, controller, n_iter, params_agent, validation_mask=False):
     ax3 = fig.add_subplot(grid[0, 1])
     ax4 = fig.add_subplot(grid[1, 1])
 
-    timeVec= np.linspace(params_agent.TIMESTEP_CRTL, time, len(pos_list))
+    timeVec= np.linspace(params_agent.TIMESTEP_CTRL, time, len(pos_list))
     colormap = cm.spring(timeVec / timeVec.max())
 
     ax1.plot(np.append(_params_task.TRIANGLE[1, :], _params_task.TRIANGLE[1, 0]),

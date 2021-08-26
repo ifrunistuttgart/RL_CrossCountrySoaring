@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class params_task:
     def __init__(self):
         # triangle orientation: alpha - pi/2 ('alpha' referred to in GPS triangle regulations)

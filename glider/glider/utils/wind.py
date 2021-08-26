@@ -9,7 +9,7 @@ class Wind(object):
     def __init__(self):
 
         # instantiate parameters
-        # self._params_task = params_task()
+        # self._params_task = TaskParameters()
         self._params_wind = params_environment.params_wind()
 
         # set wind data

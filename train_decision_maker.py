@@ -363,7 +363,7 @@ def main():
         format(vars(params_decision_maker.ModelParameters())) + "\n" +
         format(vars(_params_agent)) + "\n" +
         format(vars(_params_logging)) + "\n\n" +
-        format(vars(params_triangle_soaring.params_task())) + "\n\n" +
+        format(vars(params_triangle_soaring.TaskParameters())) + "\n\n" +
         format(vars(params_environment.params_sim())) + "\n" +
         format(vars(params_environment.params_glider())) + "\n" +
         format(vars(params_environment.params_physics())) + "\n" +

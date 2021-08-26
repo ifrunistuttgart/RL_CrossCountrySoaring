@@ -20,7 +20,7 @@ def main(env, controller, n_iter, params_agent, validation_mask=False):
     pos_list = [[state[0], state[1], state[2]]]
     ctrl_list = []
 
-    _params_task    = params_triangle_soaring.params_task()
+    _params_task    = params_triangle_soaring.TaskParameters()
     _params_sim     = params_environment.params_sim()
     _params_wind    = params_environment.params_wind()
 

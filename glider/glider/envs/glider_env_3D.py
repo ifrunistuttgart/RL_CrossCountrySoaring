@@ -24,7 +24,7 @@ class gliderEnv3D(gym.Env):
         self._params_physics = params_environment.params_physics()
         self._params_sim = params_environment.params_sim()
         self._params_wind = params_environment.params_wind()
-        self._params_task = params_triangle_soaring.params_task()
+        self._params_task = params_triangle_soaring.TaskParameters()
 
         if agent == 'vertex_tracker':
             self.agent = agent

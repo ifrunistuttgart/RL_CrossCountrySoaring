@@ -20,7 +20,7 @@
 """
 
 import numpy as np
-from parameters.params_triangle_soaring import params_task
+from parameters.params_triangle_soaring import TaskParameters
 
 
 class LearningParameters:
@@ -151,7 +151,7 @@ class AgentParameters:
     """
 
     def __init__(self):
-        _params_task = params_task()  # get task parameters
+        _params_task = TaskParameters()  # get task parameters
         self.TIMESTEP_CTRL = 1.0
         self.INITIAL_STATE = np.append(np.array([0., 0., -400.]),
                                        np.append(_params_task.G_T_T @ np.array([[0.], [15.]]), 1.))

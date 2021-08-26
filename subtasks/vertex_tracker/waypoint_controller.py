@@ -22,7 +22,7 @@ class Controller_Wrapper():
 
 class Waypoint_Controller():
     def __init__(self):
-        self._params_task = params_triangle_soaring.params_task()
+        self._params_task = params_triangle_soaring.TaskParameters()
         self._params_glider = params_environment.params_glider()
         self._params_physics = params_environment.params_physics()
         self._params_control = params_vertex_tracker.params_control()

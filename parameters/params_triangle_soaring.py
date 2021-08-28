@@ -48,7 +48,7 @@ class TaskParameters:
         self.ORIENTATION = 0
         self.G_T_T = np.transpose(np.array([[np.cos(self.ORIENTATION), np.sin(self.ORIENTATION)],
                                             [-np.sin(self.ORIENTATION), np.cos(self.ORIENTATION)]]))
-        #
+
         self.TRIANGLE = self.G_T_T @ np.array([[0., 350, 0.],
                                                [350, 0., -350]])
 

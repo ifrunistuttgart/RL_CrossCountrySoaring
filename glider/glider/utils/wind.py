@@ -10,7 +10,7 @@ class Wind(object):
 
         # instantiate parameters
         # self._params_task = TaskParameters()
-        self._params_wind = params_environment.params_wind()
+        self._params_wind = params_environment.WindParameters()
 
         # set wind data
         self._wind_data = np.nan

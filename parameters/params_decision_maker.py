@@ -15,8 +15,6 @@
     LoggingParameters
         Print and save interval for data logger
 
-
-#TODO Was ist GAE?
 """
 
 import numpy as np

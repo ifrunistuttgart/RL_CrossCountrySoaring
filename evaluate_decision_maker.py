@@ -21,8 +21,8 @@ def main(env, controller, n_iter, params_agent, validation_mask=False):
     ctrl_list = []
 
     _params_task    = params_triangle_soaring.TaskParameters()
-    _params_sim     = params_environment.params_sim()
-    _params_wind    = params_environment.params_wind()
+    _params_sim     = params_environment.SimulationParameters()
+    _params_wind    = params_environment.WindParameters()
 
     while not done:
         # evaluate and apply policy

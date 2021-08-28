@@ -364,10 +364,10 @@ def main():
         format(vars(_params_agent)) + "\n" +
         format(vars(_params_logging)) + "\n\n" +
         format(vars(params_triangle_soaring.TaskParameters())) + "\n\n" +
-        format(vars(params_environment.params_sim())) + "\n" +
-        format(vars(params_environment.params_glider())) + "\n" +
-        format(vars(params_environment.params_physics())) + "\n" +
-        format(vars(params_environment.params_wind())))
+        format(vars(params_environment.SimulationParameters())) + "\n" +
+        format(vars(params_environment.GliderParameters())) + "\n" +
+        format(vars(params_environment.PhysicsParameters())) + "\n" +
+        format(vars(params_environment.WindParameters())))
     parameterFile.close()
 
     # set random seed

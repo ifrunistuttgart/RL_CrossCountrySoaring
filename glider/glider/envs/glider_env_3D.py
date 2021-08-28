@@ -20,10 +20,10 @@ class gliderEnv3D(gym.Env):
     def __init__(self, agent='vertex_tracker'):
 
         # instantiate parameters
-        self._params_glider = params_environment.params_glider()
-        self._params_physics = params_environment.params_physics()
-        self._params_sim = params_environment.params_sim()
-        self._params_wind = params_environment.params_wind()
+        self._params_glider = params_environment.GliderParameters()
+        self._params_physics = params_environment.PhysicsParameters()
+        self._params_sim = params_environment.SimulationParameters()
+        self._params_wind = params_environment.WindParameters()
         self._params_task = params_triangle_soaring.TaskParameters()
 
         if agent == 'vertex_tracker':

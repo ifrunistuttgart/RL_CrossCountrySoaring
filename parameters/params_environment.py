@@ -128,6 +128,12 @@ class GliderParameters:
     """
 
     def __init__(self):
+        """
+
+        Returns
+        -------
+        object
+        """
         self.M = 4.200
         self.S = .468
         self.ST = 10.2

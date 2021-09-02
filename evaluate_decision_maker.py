@@ -58,7 +58,7 @@ def main(env, controller, n_iter, params_agent, validation_mask=False):
              np.append(_params_task.TRIANGLE[0, :], _params_task.TRIANGLE[0, 0]), 'r-')
 
     # plot updrafts
-    updraft_position = env._wind_fun._wind_data['updraft_position']
+    updraft_position = env._wind_fun.wind_data['updraft_position']
     if not np.isnan(updraft_position).any():
         ax1.plot(updraft_position[1, :], updraft_position[0, :], 'b+')
         for k in range(len(updraft_position[0])):

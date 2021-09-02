@@ -13,7 +13,7 @@ class Wind(object):
         self._params_wind = params_environment.WindParameters()
 
         # set wind data
-        self._wind_data = np.nan
+        self.wind_data = np.nan
         self.reset_wind()
 
         # set updraft shape factors
@@ -100,13 +100,13 @@ class Wind(object):
     def reset_wind(self):
         headwind_data = self._init_headwind(self._params_wind)
         updraft_data = self._init_updrafts(self._params_wind)
-        self._wind_data = {**headwind_data, **updraft_data}
+        self.wind_data = {**headwind_data, **updraft_data}
 
     def get_wind_data(self):
-        return self._wind_data
+        return self.wind_data
 
     def set_wind_data(self, wind_data):
-        self._wind_data = wind_data
+        self.wind_data = wind_data
 
     def store_wind_data(self, wind_data):
         self._stored_wind_data = wind_data
@@ -115,10 +115,10 @@ class Wind(object):
         wind = np.zeros(3).reshape(3, 1)
         position = position.reshape(3, 1)
         if self._params_wind.APPLY_HEADWIND:
-            wind[0:2] = self._wind_data['headwind_velocity'] *\
-                        np.array([[np.cos(self._wind_data['headwind_direction'])],
-                                  [np.sin(self._wind_data['headwind_direction'])]])
-        if self._params_wind.APPLY_UPDRAFTS and self._wind_data['updraft_count'] and (-position[2] > 0.1):
+            wind[0:2] = self.wind_data['headwind_velocity'] * \
+                        np.array([[np.cos(self.wind_data['headwind_direction'])],
+                                  [np.sin(self.wind_data['headwind_direction'])]])
+        if self._params_wind.APPLY_UPDRAFTS and self.wind_data['updraft_count'] and (-position[2] > 0.1):
             wind[2] = -self.get_current_updraft(position)
 
         return wind
@@ -128,10 +128,10 @@ class Wind(object):
                 Updraft Model for Development of Autonomous Soaring Uninhabited Air Vehicles """
 
         # assign updraft data
-        updraft_count = int(self._wind_data['updraft_count'])
-        updraft_position = self._wind_data['updraft_position']
-        updraft_wgain = self._wind_data['updraft_wgain']
-        updraft_rgain = self._wind_data['updraft_rgain']
+        updraft_count = int(self.wind_data['updraft_count'])
+        updraft_position = self.wind_data['updraft_position']
+        updraft_wgain = self.wind_data['updraft_wgain']
+        updraft_rgain = self.wind_data['updraft_rgain']
 
         # calculate distance to each updraft
         dist = []

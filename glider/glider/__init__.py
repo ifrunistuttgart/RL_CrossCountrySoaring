@@ -6,5 +6,5 @@ register(
 )
 register(
     id='glider3D-v0',
-    entry_point='glider.envs:gliderEnv3D',
+    entry_point='glider.envs:GliderEnv3D',
 )

@@ -1,9 +1,10 @@
 import numpy as np
 import sys
 import os
+from parameters import params_environment
 
 sys.path.append(os.path.join("..", "..", ".."))
-from parameters import params_environment
+
 
 class Wind(object):
     def __init__(self):

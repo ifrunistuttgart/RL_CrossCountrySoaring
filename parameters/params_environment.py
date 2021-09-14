@@ -134,10 +134,10 @@ class GliderParameters:
         -------
         object
         """
-        self.M = 4.200
-        self.S = .468
-        self.ST = 10.2
-        self.OE = .9
+        self.M = 4.500
+        self.S = 0.79
+        self.ST = 23.6
+        self.OE = .95
         self.CD0 = .015
         self.Z_ALPHA = -155
 

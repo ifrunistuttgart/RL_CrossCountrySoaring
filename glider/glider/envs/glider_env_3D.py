@@ -85,18 +85,14 @@ class GliderEnv3D(gym.Env):
 
         self._wind_fun = Wind()
 
-        # if agent == 'vertex_tracker':
-        #     self.agent = agent
-        #     self._params_agent = params_vertex_tracker.params_agent()
-        #    # self.current_task = self._params_task.TASK  # kann weg, wenn vertex tracker rausfliegt
         if agent == 'updraft_exploiter':
             self.agent = agent
-            self._params_agent = params_updraft_exploiter.params_agent()
-            # self.current_task = 'exploitation'
+            self._params_agent = params_updraft_exploiter.AgentParameters()
+            self.current_task = 'exploitation'
         elif agent == 'decision_maker':
             self.agent = agent
             self._params_agent = params_decision_maker.AgentParameters()
-            # self.current_task = self._params_task.TASK
+            self.current_task = self._params_task.TASK
         else:
             sys.exit("not a valid agent passed for env setup")
 
@@ -122,7 +118,6 @@ class GliderEnv3D(gym.Env):
         self.viewer = None
 
     def seed(self, seed=None):
-        # TODO: Logik der Funktion überprüfen
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
@@ -135,14 +130,10 @@ class GliderEnv3D(gym.Env):
             Reset vehicle state
 
         """
-        # if self.agent == 'vertex_tracker':
-        #     initState = self.np_random.uniform(self._params_agent.INITIAL_SPACE[:, 0],
-        #                                        self._params_agent.INITIAL_SPACE[:, 1])
-        #     self.active_vertex = self.np_random.randint(1, 4)
-        #     self.time = 0
+
         if self.agent == 'updraft_exploiter':
-            initState = self.np_random.uniform(self._params_agent.INITIAL_STATE[:, 0],
-                                               self._params_agent.INITIAL_STATE[:, 1])
+            initState = self.np_random.uniform(self._params_agent.INITIAL_SPACE[:, 0],
+                                               self._params_agent.INITIAL_SPACE[:, 1])
             self.active_vertex = self.np_random.randint(1, 4)  # should not matter
             self.time = 0
         elif self.agent == 'decision_maker':

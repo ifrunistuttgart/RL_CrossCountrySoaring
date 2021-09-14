@@ -1,40 +1,33 @@
-# -*- coding: utf-8 -*-
 """
-Created on Tue Jun 30 11:00:28 2020
-
-@author: Gregor
-
-This takes a pytorch model to generate a .mat-File with all the tensors from the
-state dictionary.
+Exports trained pytorch model of updraft exploiter and decision maker to MATLAB. Generates a .mat-File with all
+the tensors from the state dictionary.
 """
-
-# take state dict as input
-# import torch
-# import numpy as np
 
 from scipy.io import savemat
 
 
-class mFileGenerator():
-    """
-    Superclass for the MATLAB-File generator.
+class MatFileExporter:
+    """ Class which contains functions for exporting model parameters of updraft exploiter and decision maker
+        to .mat-File.
     """
 
     def __init__(self):
         pass
 
-    def printStateDict(self, pytorch_model):
+    @staticmethod
+    def export_updraft_exploiter(updraft_exploiter, filepath):
+        """ This function takes the weights and biases of the updraft exploiter and stores
+            them into a .mat-File.
 
-        for e in pytorch_model.state_dict():
-            print(e)
+        Parameters
+        ----------
+        updraft_exploiter : model_updraft_exploiter.ActorCritic
+            updraft_exploiter object which contains parameters of trained model
 
+        filepath : str
+            filepath for saving the generated .mat-File
 
-class updraftGenerator(mFileGenerator):
-
-    def __init__(self):
-        super().__init__()
-
-    def generateFile(self, updraft_exploiter, filepath):
+        """
 
         # extract weight vectors from model
         lstm_w_ih = updraft_exploiter.lstm.weight_ih_l0
@@ -42,7 +35,7 @@ class updraftGenerator(mFileGenerator):
         lstm_b_ih = updraft_exploiter.lstm.bias_ih_l0
         lstm_b_hh = updraft_exploiter.lstm.bias_hh_l0
 
-        # list which stores weights and biases
+        # declare list which stores weights and biases
         weight_list = []
 
         name_list = ["w_ii", "w_if", "w_ig", "w_io",
@@ -57,6 +50,7 @@ class updraftGenerator(mFileGenerator):
         b_ii, b_if, b_ig, b_io = lstm_b_ih.chunk(4,0)
         b_hi, b_hf, b_hg, b_ho = lstm_b_hh.chunk(4,0)
         """
+
         # split weights and biases and copy them to a list
         weight_list.extend(list(lstm_w_ih.chunk(4, 0)))
         weight_list.extend(list(lstm_w_hh.chunk(4, 0)))
@@ -84,16 +78,19 @@ class updraftGenerator(mFileGenerator):
         # save weights to matlab file
         savemat(filepath, weight_dict)
 
+    @staticmethod
+    def export_decision_maker(decision_maker, filepath):
+        """ This function takes the weights and biases of the updraft exploiter and stores
+            them into a .mat-File.
 
-class decisionGenerator(mFileGenerator):
-    """
-    Generates .mat-File of the decision_maker
-    """
+        Parameters
+        ----------
+        decision_maker : model_updraft_exploiter.ActorCritic
+            updraft_exploiter object which contains parameters of trained model
 
-    def __init__(self):
-        super().__init__()
-
-    def generateFile(self, decision_maker, filepath):
+        filepath : str
+            filepath for saving the generated .mat-File
+        """
 
         # extract weight vectors from model
         lstm_w_ih = decision_maker.lstm.weight_ih_l0
@@ -116,6 +113,7 @@ class decisionGenerator(mFileGenerator):
         b_ii, b_if, b_ig, b_io = lstm_b_ih.chunk(4,0)
         b_hi, b_hf, b_hg, b_ho = lstm_b_hh.chunk(4,0)
         """
+
         # split weights and biases and copy them to a list
         weight_list.extend(list(lstm_w_ih.chunk(4, 0)))
         weight_list.extend(list(lstm_w_hh.chunk(4, 0)))
@@ -131,7 +129,6 @@ class decisionGenerator(mFileGenerator):
             weight_dict[name] = weight
             # add to dict
 
-        # add hidden and actor/critic layer to dict
         # add input and output layer to dict
         _ = decision_maker
         weight_dict['w_input'] = _.input_layer.weight.detach().numpy()

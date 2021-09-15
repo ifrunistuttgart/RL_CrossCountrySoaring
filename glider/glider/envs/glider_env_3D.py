@@ -287,6 +287,7 @@ class GliderEnv3D(gym.Env):
             print("xp is not a number: {}".format(xp))
         return xp
 
+    @staticmethod
     def get_rotation_matrix(self, angle, axis):
         """
 
@@ -466,7 +467,7 @@ class GliderEnv3D(gym.Env):
         if self.agent == 'updraft_exploiter':
             reward = self.get_energy_reward()
             out_of_sight = False
-            timeout = (self.time >= 400)
+            timeout = (self.time >= self._params_task.WORKING_TIME/6)  # 1800 s / 6 = 5 minutes
         elif self.agent == 'decision_maker':
             # reward = 200 / 3 if (self.active_vertex != old_vertex) else 0
             reward = 200 if (self.lap_counter > old_lap_counter) else 0
@@ -565,38 +566,38 @@ class GliderEnv3D(gym.Env):
                                                                    + (a_T_g[0, :]
                                                                       @ np.array([[0], [0], [self._params_physics.G]])))
 
-        # energy-equivalent climb rate, normalized by sink at best glide TODO: best endurance would be "correct"
-        V_bestGlide, gamma_bestGlide = self.get_best_glide()
-        w_normalized = w.item() - V_bestGlide * gamma_bestGlide
+        # # energy-equivalent climb rate, normalized by sink at best glide TODO: best endurance would be "correct"
+        # V_bestGlide, gamma_bestGlide = self.get_best_glide()
+        # w_normalized = w.item() - V_bestGlide * gamma_bestGlide
 
         # delta normalized energy-equivalent climb rate
         energyReward = w_normalized * self._params_agent.TIMESTEP_CTRL
 
         return energyReward
 
-    def get_best_glide(self):
-        """ Calculates best glide velocity and angle
-
-        Returns
-        -------
-        V_bestGlide: float
-            Best gliding velocity
-
-        gamma_bestGlide: float
-            Best gliding angle
-        """
-        alpha_bestGlide = ((self._params_glider.ST + 2)
-                           * np.sqrt(self._params_glider.CD0 * self._params_glider.OE / self._params_glider.ST)) \
-                          / (2 * np.sqrt(np.pi))
-        cL_bestGlide = (2 * np.pi * alpha_bestGlide * self._params_glider.ST) / (self._params_glider.ST + 2)
-        cD_bestGlide = self._params_glider.CD0 \
-                       + (1 / (np.pi * self._params_glider.ST * self._params_glider.OE)) * np.power(cL_bestGlide, 2)
-
-        V_bestGlide = np.sqrt((2 * self._params_glider.M * self._params_physics.G)
-                              / (self._params_physics.RHO * self._params_glider.S * cL_bestGlide))
-        gamma_bestGlide = -cD_bestGlide / cL_bestGlide
-
-        return V_bestGlide, gamma_bestGlide
+    # def get_best_glide(self):
+    #     """ Calculates best glide velocity and angle
+    #
+    #     Returns
+    #     -------
+    #     V_bestGlide: float
+    #         Best gliding velocity
+    #
+    #     gamma_bestGlide: float
+    #         Best gliding angle
+    #     """
+    #     alpha_bestGlide = ((self._params_glider.ST + 2)
+    #                        * np.sqrt(self._params_glider.CD0 * self._params_glider.OE / self._params_glider.ST)) \
+    #                       / (2 * np.sqrt(np.pi))
+    #     cL_bestGlide = (2 * np.pi * alpha_bestGlide * self._params_glider.ST) / (self._params_glider.ST + 2)
+    #     cD_bestGlide = self._params_glider.CD0 \
+    #                    + (1 / (np.pi * self._params_glider.ST * self._params_glider.OE)) * np.power(cL_bestGlide, 2)
+    #
+    #     V_bestGlide = np.sqrt((2 * self._params_glider.M * self._params_physics.G)
+    #                           / (self._params_physics.RHO * self._params_glider.S * cL_bestGlide))
+    #     gamma_bestGlide = -cD_bestGlide / cL_bestGlide
+    #
+    #     return V_bestGlide, gamma_bestGlide
 
     # def get_updraft_proximity_reward(self):
     #     """ Calculates reward, depending on proximity to closest updraft

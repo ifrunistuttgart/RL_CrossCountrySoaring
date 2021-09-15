@@ -13,8 +13,8 @@ import gym
 device = torch.device('cpu')
 
 # Enter filepath for updraft_exploiter and decision_maker
-updraft_exploiter_file = "updraft_exploiter_actor_critic_final_17-December-2020_11-06.pt"
-decision_maker_file = "decision_maker_actor_final_18-January-2021_00-03.pt"
+updraft_exploiter_file = "updraft_exploiter_actor_critic_final_02-September-2021_19-43.pt"
+decision_maker_file = "decision_maker_actor_final_12-April-2021_08-37.pt"
 
 # Choose export targets
 export_decision_maker = True
@@ -37,13 +37,11 @@ path_updraft_exploiter = "./mat_files/{}".format(updraft_exploiter_file.replace(
 
 # Export updraft exploiter
 if export_updraft_exploiter:
-    #updraft_generator = mat_file_generator.MatFileExporter()
-    MatFileExporter.export_decision_maker(ppo.updraft_exploiter, path_updraft_exploiter)
+    MatFileExporter.export_updraft_exploiter(ppo.updraft_exploiter, path_updraft_exploiter)
     print("Updraft exploiter successfully exported!")
 
 # Export decision maker
 if export_decision_maker:
-    #decision_generator = mat_file_generator.DecisionGenerator()
     MatFileExporter.export_decision_maker(ppo.model.actor, path_decision_maker)
     print("Decision maker successfully exported!")
 

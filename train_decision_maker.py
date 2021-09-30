@@ -14,7 +14,7 @@ import collections
 import evaluate_decision_maker
 from parameters import params_environment, params_triangle_soaring, params_decision_maker
 from subtasks.updraft_exploiter import model_updraft_exploiter
-from subtasks.vertex_tracker.waypoint_controller import Controller_Wrapper
+from subtasks.vertex_tracker.waypoint_controller import ControllerWrapper
 import utils.core as core
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -241,7 +241,7 @@ class PPO:
         p_exploit = np.clip(action_agent.item() + inductive_bias.item(), 0, 1)
 
         # evaluate vertex tracker
-        action_vertex_tracker = self.vertex_tracker.select_action(self.env.get_full_observation)
+        action_vertex_tracker = self.vertex_tracker.select_action()
 
         # evaluate updraft exploiter
         normalized_updraft_positions = self.env.get_updraft_positions()
@@ -329,7 +329,7 @@ def main():
     env = gym.make('glider3D-v0', agent='decision_maker')
 
     # instantiate vertex-tracker and updraft-exploiter
-    waypoint_controller = Controller_Wrapper(env)
+    waypoint_controller = ControllerWrapper(env)
     updraft_exploiter = model_updraft_exploiter.ActorCritic().to(device)
     updraft_exploiter.load_state_dict(torch.load("updraft_exploiter_actor_critic_final_17-December-2020_11-06.pt"))
 

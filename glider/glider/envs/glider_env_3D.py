@@ -21,28 +21,32 @@ class GliderEnv3D(gym.Env):
     Attributes
     ----------
 
-    _params_glider: GliderParameters
+    _params_glider : GliderParameters
         Mass and aerodynamic parameters
 
-    _params_physics: PhysicsParameters
+    _params_physics : PhysicsParameters
         Gravity constant and air density
 
-    _params_sim: SimulationParameters
+    _params_sim : SimulationParameters
         Simulation time and ODE-solver
 
-    _params_wind: WindParameters
+    _params_wind : WindParameters
         Updraft model parameters
 
-    _params_task: TaskParameters
+    _params_task : TaskParameters
         Triangle soaring task parameters
 
-    agent: str
+    _params_agent : AgentParameters
+        Parameters for updraft exploiter or decision maker
+
+    agent : str
         Chooses environment for updraft exploiter or decision maker
 
-    _wind_fun: Wind
+    _wind_fun : Wind
         Wind function
 
-    _integrator :
+    _integrator : scipy.integrate
+        Integrator from scipy package or self written Euler integrator
 
     lb: ndarray
         Lower bound for control command
@@ -299,7 +303,7 @@ class GliderEnv3D(gym.Env):
         return xp
 
     @staticmethod
-    def get_rotation_matrix(self, angle, axis):
+    def get_rotation_matrix(angle, axis):
         """
 
         Parameters
@@ -582,7 +586,7 @@ class GliderEnv3D(gym.Env):
         # w_normalized = w.item() - V_bestGlide * gamma_bestGlide
 
         # delta normalized energy-equivalent climb rate
-        energyReward = w_normalized * self._params_agent.TIMESTEP_CTRL
+        energyReward = w.item() * self._params_agent.TIMESTEP_CRTL
 
         return energyReward
 

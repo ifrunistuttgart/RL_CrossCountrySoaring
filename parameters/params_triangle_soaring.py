@@ -11,7 +11,7 @@ import numpy as np
 
 
 class TaskParameters:
-    """ Hyperparameters for training actor-critic model
+    """ Parameters which are used to describe the soaring task
 
     Attributes
     ----------

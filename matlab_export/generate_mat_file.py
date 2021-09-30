@@ -5,7 +5,7 @@ to .mat-Files
 
 import train_decision_maker
 from subtasks.updraft_exploiter import model_updraft_exploiter
-from subtasks.vertex_tracker.waypoint_controller import Controller_Wrapper
+from subtasks.vertex_tracker.waypoint_controller import ControllerWrapper
 from mat_file_generator import MatFileExporter
 import torch
 import gym
@@ -26,7 +26,7 @@ updraft_exploiter.load_state_dict(torch.load(updraft_exploiter_file, map_locatio
 
 # Create ppo-object and load decision maker
 env = gym.make('glider3D-v0', agent='decision_maker')
-waypoint_controller = Controller_Wrapper(env)
+waypoint_controller = ControllerWrapper(env)
 ppo = train_decision_maker.PPO(waypoint_controller, updraft_exploiter, env)
 ppo.model.actor.to(device)
 ppo.model.actor.load_state_dict(torch.load(decision_maker_file, map_location=torch.device('cpu')))

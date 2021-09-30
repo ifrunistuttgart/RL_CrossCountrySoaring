@@ -36,8 +36,6 @@ class GliderEnv3D(gym.Env):
     _params_task: TaskParameters
         Triangle soaring task parameters
 
-
-
     agent: str
         Chooses environment for updraft exploiter or decision maker
 
@@ -70,7 +68,11 @@ class GliderEnv3D(gym.Env):
     lap_counter: int
         Number of completed laps
 
-    viewer = None
+    viewer: TODO: Wird diese Variable irgendwo gesetzt bzw. verwendet?
+        ...
+
+    np_random: object
+        Numpy random number generator
 
     """
 
@@ -116,17 +118,26 @@ class GliderEnv3D(gym.Env):
         self.vertex_counter = None
         self.lap_counter = None
         self.viewer = None
+        self.np_random = None
 
     def seed(self, seed=None):
+        """  Sets up random number generator of simulation environment
+
+        Parameters
+        ----------
+        seed: int
+            Seed for random number generator
+
+        """
         self.np_random, seed = seeding.np_random(seed)
-        return [seed]
+        #return [seed] braucht man vermutlich nicht
 
     def reset(self):
         """ Resets environment and glider state. Initial state depends on agent type.
 
         Returns
         -------
-        ndarray
+        state : ndarray
             Reset vehicle state
 
         """
@@ -159,21 +170,21 @@ class GliderEnv3D(gym.Env):
 
         Parameters
         ----------
-        action :
+        action : ndarray
             Output from ANN
 
-        timestep :
+        timestep : float
             Simulation timestep
 
         Returns
         -------
-        observation:
+        observation: ndarray
             Observation depending on agent
 
-        reward:
+        reward: ndarray
              Reward for updraft exploiter or decision maker
 
-        done:
+        done: bool
             Flag if episode has terminated
 
         info:

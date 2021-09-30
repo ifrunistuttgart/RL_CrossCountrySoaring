@@ -17,7 +17,7 @@ class MatFileExporter:
 
         Parameters
         ----------
-        model : decision maker or updraft expoliter model
+        model : decision maker or updraft exploiter model
 
         Returns
         -------

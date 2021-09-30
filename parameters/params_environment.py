@@ -19,6 +19,7 @@ Classes
 
 """
 import numpy as np
+from numpy.core._multiarray_umath import ndarray
 
 
 class WindParameters:
@@ -79,6 +80,12 @@ class WindParameters:
 
     DELTA: int
         Delta-neighborhood to indicate updraft proximity
+
+    _r1r2shape: ndarray
+        Shape parameter for kurtosis of updraft
+
+    kShape: ndarray
+        Shape parameters for different sizes of updrafts
     """
 
     def __init__(self):
@@ -100,6 +107,14 @@ class WindParameters:
         self.UPD_MEAN = 500
         self.UPD_STD = 500
         self.DELTA = 100
+        self.r1r2shape = np.array([0.1400, 0.2500, 0.3600, 0.4700, 0.5800, 0.6900, 0.8000])
+        self.kShape = np.array([[1.5352, 2.5826, -0.0113, 0.0008],
+                                [1.5265, 3.6054, -0.0176, 0.0005],
+                                [1.4866, 4.8356, -0.0320, 0.0001],
+                                [1.2042, 7.7904, 0.0848, 0.0001],
+                                [0.8816, 13.9720, 0.3404, 0.0001],
+                                [0.7067, 23.9940, 0.5689, 0.0002],
+                                [0.6189, 42.7965, 0.7157, 0.0001]])
 
 
 class GliderParameters:

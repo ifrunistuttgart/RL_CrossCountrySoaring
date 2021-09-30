@@ -1,3 +1,15 @@
+""" This module implements the updraft model, which generates bell-shaped, vertical velocity distributions
+
+Classes
+    -------
+
+    Wind
+        Implements updraft model according to
+        "Updraft Model for Development of Autonomous Soaring Uninhabited Air Vehicles" by Michael Allen
+        https://arc.aiaa.org/doi/10.2514/6.2006-1510
+
+"""
+
 import numpy as np
 import sys
 import os
@@ -7,6 +19,30 @@ sys.path.append(os.path.join("..", "..", ".."))
 
 
 class Wind(object):
+    """ Implements updraft model
+
+    Attributes
+    ----------
+
+    _params_wind: WindParameters
+        Stores wind parameters
+
+    wind_data: dict
+        Dictionary which contains the following wind data:
+
+        wind_data['updraft_count'] : int
+            Number of updrafts
+
+        wind_data['updraft_position'] : ndarray
+            Position of updrafts in NED-coordinates
+
+        wind_data['updraft_wgain'] : float
+            Multiplier on vertical velocity
+
+        wind_data['updraft_rgain'] : float
+            Multiplier on radius
+    """
+
     def __init__(self):
 
         # instantiate parameters
@@ -18,16 +54,18 @@ class Wind(object):
         self.reset_wind()
 
         # set updraft shape factors
+        """ Moved to parameters
         self._r1r2shape = np.array([0.1400, 0.2500, 0.3600, 0.4700, 0.5800, 0.6900, 0.8000])
-        self._kShape    = np.array([[1.5352, 2.5826, -0.0113, 0.0008],
+        self.kShape    = np.array([[1.5352, 2.5826, -0.0113, 0.0008],
                                    [1.5265, 3.6054, -0.0176, 0.0005],
                                    [1.4866, 4.8356, -0.0320, 0.0001],
                                    [1.2042, 7.7904, 0.0848, 0.0001],
                                    [0.8816, 13.9720, 0.3404, 0.0001],
                                    [0.7067, 23.9940, 0.5689, 0.0002],
                                    [0.6189, 42.7965, 0.7157, 0.0001]])
+        """
 
-    @staticmethod  # TODO: check that method
+    @staticmethod  # TODO: check that method -> Braucht man die?
     def _init_headwind(params_wind):
 
         if params_wind.APPLY_HEADWIND:
@@ -47,29 +85,46 @@ class Wind(object):
     @staticmethod
     def _init_updrafts(params_wind):
         """ init updraft model according to M. Allen:
-        Updraft Model for Development of Autonomous Soaring Uninhabited Air Vehicles """
+        Updraft Model for Development of Autonomous Soaring Uninhabited Air Vehicles
+
+        Parameters
+        ----------
+
+        params_wind : WindParameters
+            Wind parameters
+
+        Returns
+        -------
+
+        updraft data: dict
+            Dictionary with number of updrafts, position, multipliers for vertical velocity and radius
+        """
 
         if params_wind.APPLY_UPDRAFTS:
+
             # Sample number of updrafts
             updraft_count = int(np.random.uniform(params_wind.UPCOUNT_MIN, params_wind.UPCOUNT_MAX + 1))
-
             # set updraft positions (north, east)
             updraft_position = np.empty([2, 1])
+
             for i in range(0, updraft_count):
+
                 # draw updraft position from uniform-distribution wrt. cartesian north-east frame
-                phi = np.random.uniform(0, 2*np.pi)
+                phi = np.random.uniform(0, 2 * np.pi)
                 r = np.sqrt(np.random.uniform(0, 1)) * params_wind.RADIUS
                 position = np.array([r * np.cos(phi), r * np.sin(phi)])
 
                 # convert position in polar coordinates
                 distance = np.linalg.norm(position)
                 polarAngle = np.arctan2(position[1], position[0]).item()
-                thisUpdraft = distance*np.array([[np.cos(polarAngle)], [np.sin(polarAngle)]])
+                thisUpdraft = distance * np.array([[np.cos(polarAngle)], [np.sin(polarAngle)]])
 
                 if i == 0:  # the first updraft is always added
                     updraft_position = thisUpdraft
+
                 else:  # further updrafts are added, if distance to any already existing updraft exceeds DIST_MIN
                     norms = np.linalg.norm(updraft_position - thisUpdraft, axis=0)
+
                     if np.greater(norms, params_wind.DIST_MIN).all():
                         updraft_position = np.append(updraft_position, thisUpdraft, 1)
 
@@ -96,37 +151,72 @@ class Wind(object):
 
         return updraft_data
 
-########################################################################################################################
-    """ Setter and Getter:"""
     def reset_wind(self):
+        """ Resets headwind and updraft data"""
+
         headwind_data = self._init_headwind(self._params_wind)
         updraft_data = self._init_updrafts(self._params_wind)
         self.wind_data = {**headwind_data, **updraft_data}
 
     def get_wind_data(self):
+        """ Getter function for wind data
+
+        Returns
+        -------
+        wind_data: : dict
+            Dictionary with number of updrafts, position, multipliers for vertical velocity and radius
+        """
         return self.wind_data
 
     def set_wind_data(self, wind_data):
+        """ Setter function for wind data"""
         self.wind_data = wind_data
 
-    def store_wind_data(self, wind_data):
-        self._stored_wind_data = wind_data
+    # def store_wind_data(self, wind_data):
+    #    self._stored_wind_data = wind_data
 
     def get_current_wind(self, position):
+        """ Calculates wind velocity at given position
+
+        Parameters
+        ----------
+        position : ndarray
+            Vehicle position
+
+        Returns
+        -------
+        wind: ndarray
+            Wind velocities in NED coordinates
+        """
+
         wind = np.zeros(3).reshape(3, 1)
         position = position.reshape(3, 1)
+
         if self._params_wind.APPLY_HEADWIND:
             wind[0:2] = self.wind_data['headwind_velocity'] * \
                         np.array([[np.cos(self.wind_data['headwind_direction'])],
                                   [np.sin(self.wind_data['headwind_direction'])]])
+
         if self._params_wind.APPLY_UPDRAFTS and self.wind_data['updraft_count'] and (-position[2] > 0.1):
             wind[2] = -self.get_current_updraft(position)
 
         return wind
 
     def get_current_updraft(self, position=None):
-        """ get current updraft according to M. Allen's updraft model:
-                Updraft Model for Development of Autonomous Soaring Uninhabited Air Vehicles """
+        """ Get current updraft according to M. Allen's updraft model:
+            "Updraft Model for Development of Autonomous Soaring Uninhabited Air Vehicles" by Michael Allen
+            https://arc.aiaa.org/doi/10.2514/6.2006-1510
+
+        Parameters
+        ----------
+        position : ndarray
+            Vehicle position
+
+        Returns
+        -------
+        w : float
+            Wind velocity
+        """
 
         # assign updraft data
         updraft_count = int(self.wind_data['updraft_count'])
@@ -156,10 +246,12 @@ class Wind(object):
         # calculate inner and outer radios of rotated trapezoid updraft
         if r2 < 10:
             r2 = 10
+
         if r2 < 600:
             r1r2 = .0011 * r2 + .14
         else:
             r1r2 = .8
+
         r1 = r1r2 * r2
 
         # multiply average updraft strength by wgain for this updraft
@@ -171,9 +263,10 @@ class Wind(object):
         # calculate updraft velocity
         r = dist[upused]
         rr2 = r / r2
+
         if -position[2] < self._params_wind.ZI:
             ka, kb, kc, kd = self.get_updraft_shape(r1r2=r1r2)  # get shape coefficients
-            ws = 1. / (1 + np.power(ka * np.abs(rr2 + kc), kb))\
+            ws = 1. / (1 + np.power(ka * np.abs(rr2 + kc), kb)) \
                  + kd * rr2  # calculate smooth vertical velocity distribution
             ws = np.maximum(0, ws)  # no negative updrafts
         else:
@@ -184,6 +277,7 @@ class Wind(object):
             w1 = (np.pi / 6) * np.sin(np.pi * rr2)  # downdraft, positive up
         else:
             w1 = 0
+
         if .5 < zzi <= .9:
             swd = 2.5 * (zzi - .5)  # scale factor for wd for zzi, used again later
             wd = swd * w1
@@ -191,11 +285,13 @@ class Wind(object):
         else:
             swd = 0
             wd = 0
+
         w2 = ws * wc + wd * wt  # scale updraft to actual velocity
 
         # calculate environment sink velocity
         At = np.pi * (rbar ** 2) * updraft_count  # total area taken by updrafts
         A = np.pi * (self._params_wind.RADIUS ** 2)  # total area of interest
+
         if At > A:
             print('Area of test space is too small')
             raise ArithmeticError
@@ -212,8 +308,21 @@ class Wind(object):
         return w
 
     def get_updraft_shape(self, r1r2=None):
-        r1r2shape = self._r1r2shape
-        kShape = self._kShape
+        """ Pick updraft shape parameters from shape constant table
+
+        Parameters
+        ----------
+        r1r2 : float
+            Shape parameter for kurtosis of updraft
+
+        Returns
+        -------
+        ka, kb, kc, kd : float
+            Picked shape parameters from kShape table
+        """
+
+        r1r2shape = self._params_wind.r1r2shape
+        kShape = self._params_wind.kShape
 
         if r1r2 < .5 * (r1r2shape[0] + r1r2shape[1]):  # pick shape
             ka = kShape[0, 0]

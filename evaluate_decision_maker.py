@@ -1,5 +1,7 @@
-import gym
-import glider
+""" This script is used for evaluating the decision maker policy. It runs one episode in the GliderEnv3D
+    environment with a given updraft exploiter policy.
+"""
+
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
@@ -9,30 +11,54 @@ import warnings
 
 from parameters import params_triangle_soaring, params_environment
 
-def main(env, controller, n_iter, params_agent, validation_mask=False):
 
+def main(env, controller, n_iter, params_agent, validation_mask=False):
+    """ Evaluates decision maker in given environment and plots result
+
+    Parameters
+    ----------
+    env : GliderEnv3D
+        OpenAI environment for glider simulation
+
+    controller : PPO
+        Decision maker policy
+
+    n_iter : int
+        Number of iterations
+
+    params_agent : AgentParameters
+        Parameters for decision maker
+
+    validation_mask : boolean
+        Flag to enable sampling of action with std-deviation for exploration
+    """
+
+    # initialize environment
     state = env.reset()
     obs = env.get_observation()
     lstm_hidden_in = controller.model.reset_lstm()
     done = False
     ret = 0
 
+    # initialize logger for position and control
     pos_list = [[state[0], state[1], state[2]]]
     ctrl_list = []
 
-    _params_task    = params_triangle_soaring.TaskParameters()
-    _params_sim     = params_environment.SimulationParameters()
-    _params_wind    = params_environment.WindParameters()
+    # create parameter objects
+    _params_task = params_triangle_soaring.TaskParameters()
+    _params_sim = params_environment.SimulationParameters()
+    _params_wind = params_environment.WindParameters()
 
+    # run one episode in environment
     while not done:
         # evaluate and apply policy
         action, _, _, _, lstm_hidden_out = controller.select_action(torch.FloatTensor(obs), lstm_hidden_in,
                                                                     validation_mask=validation_mask)
-        obs, r, done, info = env.step(action)
+        obs, r, done, _ = env.step(action)
         ret += r
         lstm_hidden_in = lstm_hidden_out
 
-        # write to lists
+        # write to lists for Logging
         pos_list.append([env.state[0], env.state[1], env.state[2]])
         control = env.action2control(action)
         ctrl_list.append([control[0], control[1]])
@@ -43,7 +69,16 @@ def main(env, controller, n_iter, params_agent, validation_mask=False):
     fig = plt.figure()
     fig.set_size_inches(11.69, 8.27)  # DinA4
     fig.suptitle("Sample after {} policy iterations:\nVertices hit: {}, Return: {:.1f}, Score: {}"
-                 .format(n_iter, (env.lap_counter*3 + env.vertex_counter), ret, env.lap_counter*200))
+                 .format(n_iter, (env.lap_counter * 3 + env.vertex_counter), ret, env.lap_counter * 200))
+
+    """ The next section generates 4 subplots, which show the North-East trajectory, mu_cmd, alpha_cmd and
+        height over time.
+        
+        ax1 : NE-trajectory
+        ax2 : height over time
+        ax3 : mu_cmd over time
+        ax4 : alpha_cmd over time
+    """
 
     grid = gridspec.GridSpec(ncols=2, nrows=3, figure=fig)
     ax1 = fig.add_subplot(grid[0:2, 0])
@@ -51,16 +86,20 @@ def main(env, controller, n_iter, params_agent, validation_mask=False):
     ax3 = fig.add_subplot(grid[0, 1])
     ax4 = fig.add_subplot(grid[1, 1])
 
-    timeVec= np.linspace(params_agent.TIMESTEP_CTRL, time, len(pos_list))
+    # scale colormap for time axis
+    timeVec = np.linspace(params_agent.TIMESTEP_CTRL, time, len(pos_list))
     colormap = cm.spring(timeVec / timeVec.max())
 
+    # plot triangle
     ax1.plot(np.append(_params_task.TRIANGLE[1, :], _params_task.TRIANGLE[1, 0]),
              np.append(_params_task.TRIANGLE[0, :], _params_task.TRIANGLE[0, 0]), 'r-')
 
     # plot updrafts
     updraft_position = env._wind_fun.wind_data['updraft_position']
+
     if not np.isnan(updraft_position).any():
         ax1.plot(updraft_position[1, :], updraft_position[0, :], 'b+')
+
         for k in range(len(updraft_position[0])):
             updraft_outline = plt.Circle((updraft_position[1, k], updraft_position[0, k]), _params_wind.DELTA,
                                          color='b', fill=False)
@@ -92,13 +131,15 @@ def main(env, controller, n_iter, params_agent, validation_mask=False):
     ax2.set_ylabel("height (m)")
     ax2.grid(True)
 
-    ax3.scatter(timeVec[1:], (180 / np.pi) * np.array(ctrl_list)[:, 0],  s=2, c=colormap[1:], edgecolor='none')
+    # plot mu_cmd over time
+    ax3.scatter(timeVec[1:], (180 / np.pi) * np.array(ctrl_list)[:, 0], s=2, c=colormap[1:], edgecolor='none')
     ax3.set_xlim(0, _params_task.WORKING_TIME)
     ax3.set_ylim(-45, 45)
     ax3.set_xticklabels([])
     ax3.set_ylabel("mu (deg)")
     ax3.grid(True)
 
+    # plot alpha_cmd over time
     ax4.scatter(timeVec[1:], (180 / np.pi) * np.array(ctrl_list)[:, 1], s=2, c=colormap[1:], edgecolor='none')
     ax4.set_xlim(0, _params_task.WORKING_TIME)
     ax4.set_ylim(0, 12)
@@ -107,6 +148,7 @@ def main(env, controller, n_iter, params_agent, validation_mask=False):
     ax4.grid(True)
     ax4.get_shared_x_axes().join(ax4, ax3)
 
+    # save plot to .png-file
     warnings.filterwarnings("ignore", category=UserWarning, module="backend_interagg")
     grid.tight_layout(fig, rect=[0, 0.03, 1, 0.95])
     plt.savefig("resultant_trajectory_iter_{}".format(n_iter) + ".png", dpi=400)
@@ -114,7 +156,3 @@ def main(env, controller, n_iter, params_agent, validation_mask=False):
 
     plt.close(fig)
     env.close()
-
-
-if __name__ == '__main__':
-    main()

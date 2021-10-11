@@ -1,7 +1,8 @@
 """ This script is used for evaluating the decision maker policy. It runs one episode in the GliderEnv3D
     environment with a given updraft exploiter policy.
 """
-
+import gym
+import glider
 import numpy as np
 import torch
 import matplotlib.pyplot as plt

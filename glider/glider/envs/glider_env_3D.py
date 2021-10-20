@@ -110,7 +110,7 @@ class GliderEnv3D(gym.Env):
         # TODO: mix aus integrator Objekt und string auflösen
 
         # set random seed
-        self.seed()
+        self.np_random, _ = seeding.np_random()
 
         # initialize further member variables
         self.lb = np.min(self._params_agent.ACTION_SPACE, 1) * (np.pi / 180)
@@ -122,19 +122,6 @@ class GliderEnv3D(gym.Env):
         self.vertex_counter = None
         self.lap_counter = None
         self.viewer = None
-        self.np_random = None
-
-    def seed(self, seed=None):
-        """  Sets up random number generator of simulation environment
-
-        Parameters
-        ----------
-        seed: int
-            Seed for random number generator
-
-        """
-        self.np_random, seed = seeding.np_random(seed)
-        #return [seed] braucht man vermutlich nicht
 
     def reset(self):
         """ Resets environment and glider state. Initial state depends on agent type.
@@ -586,7 +573,7 @@ class GliderEnv3D(gym.Env):
         # w_normalized = w.item() - V_bestGlide * gamma_bestGlide
 
         # delta normalized energy-equivalent climb rate
-        energyReward = w.item() * self._params_agent.TIMESTEP_CRTL
+        energyReward = w.item() * self._params_agent.TIMESTEP_CTRL
 
         return energyReward
 

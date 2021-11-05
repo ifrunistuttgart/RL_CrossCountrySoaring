@@ -123,8 +123,18 @@ class GliderEnv3D(gym.Env):
         self.lap_counter = None
         self.viewer = None
 
+    def seed(self, seed=None):
+        """ Sets seed for environment
+
+        Parameters
+        ----------
+        seed : Seed value
+        """
+
+        self.np_random, _ = seeding.np_random(seed)
+
     def reset(self):
-        """ Resets environment and glider state. Initial state depends on agent type.
+        """ Reset environment and glider state. Initial state depends on agent type.
 
         Returns
         -------

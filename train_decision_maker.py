@@ -6,8 +6,10 @@ import torch
 import torch.nn as nn
 from torch.distributions import Normal
 import numpy as np
+from scipy.signal import lfilter
 import matplotlib.pyplot as plt
 import pandas as pd
+from torch.nn import Linear
 from torch.utils.data import Dataset, TensorDataset
 import collections
 
@@ -15,13 +17,36 @@ import evaluate_decision_maker
 from parameters import params_environment, params_triangle_soaring, params_decision_maker
 from subtasks.updraft_exploiter import model_updraft_exploiter
 from subtasks.vertex_tracker.waypoint_controller import ControllerWrapper
-import utils.core as core
+#import utils.core as core
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+
 # device = torch.device("cpu")
 
 
 class ActorCritic(nn.Module):
+    """ This class implements the actor-critic model for the decision maker, which decides between updraft exploiting
+        and vertex tracking
+
+        Attributes
+        ----------
+        _params_rl: LearningParameters
+            Hyperparameters for learning
+
+        policy: ActorCritic
+            Actor-Critic model which represents policy
+
+        policy_old: ActorCritic
+            Policy of previous training step
+
+        optimizer: Adam
+            Set Adam as optimizer for stochastic gradient descent (SGD) algorithm
+
+        MseLoss: MSELoss
+            Use mean squared error as loss function for training
+    """
+
     def __init__(self):
         super().__init__()
 
@@ -62,14 +87,14 @@ class LSTMActor(nn.Module):
     def __init__(self, obs_dim, act_dim, hidden_size, lstm_size):
         super().__init__()
 
-        self.input_layer    = nn.Linear(obs_dim, hidden_size)
-        self.lstm           = nn.LSTM(hidden_size, lstm_size)
-        self.output_layer   = nn.Linear(lstm_size, act_dim)
+        self.input_layer = nn.Linear(obs_dim, hidden_size)
+        self.lstm = nn.LSTM(hidden_size, lstm_size)
+        self.output_layer = nn.Linear(lstm_size, act_dim)
 
-        self._obs_dim       = obs_dim
-        self._act_dim       = act_dim
-        self._hidden_size   = hidden_size
-        self._lstm_size     = lstm_size
+        self._obs_dim = obs_dim
+        self._act_dim = act_dim
+        self._hidden_size = hidden_size
+        self._lstm_size = lstm_size
 
     def forward(self, observation, lstm_hidden):
         # evaluate input
@@ -92,16 +117,44 @@ class LSTMActor(nn.Module):
 
 
 class Critic(nn.Module):
+    """ This class implements the actor-critic model for the decision maker, which decides between updrat exploiting
+        and vertex tracking
+
+        Attributes
+        ----------
+        input_layer: torch.nn.Linear
+            Input layer of critic network
+
+        hidden_layer: torch.nn.Linear
+            Hidden layer of critic network
+
+        output_layer: torch.nn.Linear
+            Output layer of critic network
+
+        _obs_dim: int
+            Dimension of input to critic network
+    """
+
     def __init__(self, obs_dim, hidden_size):
         super().__init__()
 
-        self.input_layer    = nn.Linear(obs_dim, hidden_size)
-        self.hidden_layer   = nn.Linear(hidden_size, hidden_size)
-        self.output_layer   = nn.Linear(hidden_size, 1)
+        self.input_layer = nn.Linear(obs_dim, hidden_size)
+        self.hidden_layer = nn.Linear(hidden_size, hidden_size)
+        self.output_layer = nn.Linear(hidden_size, 1)
 
-        self._obs_dim       = obs_dim
+        self._obs_dim = obs_dim
 
     def forward(self, observation):
+        """ Computes forward pass trough critic network
+
+        Parameters
+        ----------
+        observation :
+
+        Returns
+        -------
+
+        """
         # evaluate input
         x = observation.reshape(-1, self._obs_dim).to(device)  # batch_size x  input_size
         x = torch.tanh(self.input_layer(x))
@@ -120,17 +173,18 @@ class PPOBuffer:
     A buffer for storing trajectories experienced by a PPO agent interacting
     with the environment.
     """
+
     def __init__(self, obs_dim, act_dim, batch_size, lstm_hidden_size, gamma=0.99, lam=0.95):
-        self.obs_buf        = torch.zeros(batch_size, obs_dim, dtype=torch.float32, device=device)
-        self.act_buf        = torch.zeros(batch_size, act_dim, dtype=torch.float32, device=device)
-        self.adv_buf        = torch.zeros(batch_size, dtype=torch.float32, device=device)
-        self.rew_buf        = torch.zeros(batch_size, dtype=torch.float32, device=device)
-        self.ret_buf        = torch.zeros(batch_size, dtype=torch.float32, device=device)
-        self.val_buf        = torch.zeros(batch_size, dtype=torch.float32, device=device)
-        self.logp_buf       = torch.zeros(batch_size, dtype=torch.float32, device=device)
-        self.lstm_h_in_buf  = torch.zeros(batch_size, lstm_hidden_size, dtype=torch.float32, device=device)
-        self.lstm_c_in_buf  = torch.zeros(batch_size, lstm_hidden_size, dtype=torch.float32, device=device)
-        self.done_buf       = torch.zeros(batch_size, dtype=torch.bool, device=device)
+        self.obs_buf = torch.zeros(batch_size, obs_dim, dtype=torch.float32, device=device)
+        self.act_buf = torch.zeros(batch_size, act_dim, dtype=torch.float32, device=device)
+        self.adv_buf = torch.zeros(batch_size, dtype=torch.float32, device=device)
+        self.rew_buf = torch.zeros(batch_size, dtype=torch.float32, device=device)
+        self.ret_buf = torch.zeros(batch_size, dtype=torch.float32, device=device)
+        self.val_buf = torch.zeros(batch_size, dtype=torch.float32, device=device)
+        self.logp_buf = torch.zeros(batch_size, dtype=torch.float32, device=device)
+        self.lstm_h_in_buf = torch.zeros(batch_size, lstm_hidden_size, dtype=torch.float32, device=device)
+        self.lstm_c_in_buf = torch.zeros(batch_size, lstm_hidden_size, dtype=torch.float32, device=device)
+        self.done_buf = torch.zeros(batch_size, dtype=torch.bool, device=device)
         self.gamma, self.lam = gamma, lam
         self.ptr, self.path_start_idx, self.max_size = 0, 0, batch_size
 
@@ -139,14 +193,14 @@ class PPOBuffer:
         Append one timestep of agent-environment interaction to the buffer.
         """
         assert self.ptr < self.max_size  # buffer has to have room so you can store
-        self.obs_buf[self.ptr]          = obs
-        self.act_buf[self.ptr]          = act
-        self.rew_buf[self.ptr]          = rew
-        self.val_buf[self.ptr]          = val
-        self.logp_buf[self.ptr]         = logp
-        self.lstm_h_in_buf[self.ptr]    = lstm_h_in
-        self.lstm_c_in_buf[self.ptr]    = lstm_c_in
-        self.done_buf[self.ptr]         = done
+        self.obs_buf[self.ptr] = obs
+        self.act_buf[self.ptr] = act
+        self.rew_buf[self.ptr] = rew
+        self.val_buf[self.ptr] = val
+        self.logp_buf[self.ptr] = logp
+        self.lstm_h_in_buf[self.ptr] = lstm_h_in
+        self.lstm_c_in_buf[self.ptr] = lstm_c_in
+        self.done_buf[self.ptr] = done
         self.ptr += 1
 
     def finish_path(self, last_val=0):
@@ -171,15 +225,15 @@ class PPOBuffer:
         # the next two lines implement GAE-Lambda advantage calculation
         deltas = rews[:-1] + self.gamma * vals[1:] - vals[:-1]
         self.adv_buf[path_slice] = torch.FloatTensor(
-            (core.discount_cumsum(deltas.cpu().numpy(), self.gamma * self.lam)).copy()).to(device)
+            (discount_cumsum(deltas.cpu().numpy(), self.gamma * self.lam)).copy()).to(device)
 
         # the next line computes rewards-to-go, to be targets for the value function
         self.ret_buf[path_slice] = torch.FloatTensor(
-            (core.discount_cumsum(rews.cpu().numpy(), self.gamma)[:-1]).copy()).to(device)
+            (discount_cumsum(rews.cpu().numpy(), self.gamma)[:-1]).copy()).to(device)
 
         self.path_start_idx = self.ptr
 
-    def get(self,):
+    def get(self, ):
         """
         Gets all of the data from the buffer and resets pointer.
         """
@@ -234,7 +288,7 @@ class PPO:
     def select_action(self, state, lstm_hidden, validation_mask=False):
         # evaluate decision maker
         action_agent, action_agent_logprob, lstm_hidden = self.model.act(state, lstm_hidden,
-                                                                          validation_mask=validation_mask)
+                                                                         validation_mask=validation_mask)
 
         # induce bias: height=0 leads to bias->1, initial_height (400 m) leads to bias->0
         inductive_bias = .5 * (1 - torch.tanh(state[1]))
@@ -263,7 +317,7 @@ class PPO:
         # get sampled data
         data = self.buffer.get()
         obs, act, ret, adv, logp, lstm_h_in, lstm_c_in, done \
-            = data['obs'], data['act'], data['ret'], data['adv'], data['logp'],\
+            = data['obs'], data['act'], data['ret'], data['adv'], data['logp'], \
               data['lstm_h_in'], data['lstm_c_in'], data['done']
 
         # put batch to sliding-window data_loader
@@ -282,19 +336,19 @@ class PPO:
                     #  never evaluate sequences that cross episode boundaries
                     done_index = done_seq.nonzero()[0].item()  # index of first done flag in sequence
                     if done_index > (self._params_rl.SEQ_LEN_MIN - 1):
-                        obs_seq         = obs_seq[slice(0, done_index + 1)]
-                        act_seq         = act_seq[slice(0, done_index + 1)]
-                        ret_seq         = ret_seq[slice(0, done_index + 1)]
-                        adv_seq         = adv_seq[slice(0, done_index + 1)]
-                        logp_seq        = logp_seq[slice(0, done_index + 1)]
-                        lstm_h_in_seq   = lstm_h_in_seq[slice(0, done_index + 1)]
-                        lstm_c_in_seq   = lstm_c_in_seq[slice(0, done_index + 1)]
+                        obs_seq = obs_seq[slice(0, done_index + 1)]
+                        act_seq = act_seq[slice(0, done_index + 1)]
+                        ret_seq = ret_seq[slice(0, done_index + 1)]
+                        adv_seq = adv_seq[slice(0, done_index + 1)]
+                        logp_seq = logp_seq[slice(0, done_index + 1)]
+                        lstm_h_in_seq = lstm_h_in_seq[slice(0, done_index + 1)]
+                        lstm_c_in_seq = lstm_c_in_seq[slice(0, done_index + 1)]
                     else:
                         break
 
                 # "burn in" lstm hidden state (cf. "R2D2")
                 with torch.no_grad():
-                    _, (lstm_h_burned_in, lstm_c_burned_in) =\
+                    _, (lstm_h_burned_in, lstm_c_burned_in) = \
                         self.model.actor(obs_seq[0:self._params_rl.N_BURN_IN, :], (lstm_h_in_seq[0], lstm_c_in_seq[0]))
 
                 # evaluate policy for remainder sampled sequence of states and actions
@@ -307,7 +361,7 @@ class PPO:
 
                 # surrogate loss (PPO)
                 surr1 = ratios * adv_seq[self._params_rl.N_BURN_IN:]
-                surr2 = torch.clamp(ratios, 1 - self._params_rl.EPS_CLIP, 1 + self._params_rl.EPS_CLIP)\
+                surr2 = torch.clamp(ratios, 1 - self._params_rl.EPS_CLIP, 1 + self._params_rl.EPS_CLIP) \
                         * adv_seq[self._params_rl.N_BURN_IN:]
                 loss_pi = -torch.min(surr1, surr2).mean()
 
@@ -318,11 +372,30 @@ class PPO:
                 self.pi_optimizer.step()
 
                 # value function gradient step
-                loss_vf = ((self.model.critic(obs_seq) - ret_seq)**2).mean()
+                loss_vf = ((self.model.critic(obs_seq) - ret_seq) ** 2).mean()
                 self.vf_optimizer.zero_grad()
                 loss_vf.backward()
                 nn.utils.clip_grad_norm_(self.model.critic.parameters(), 1.0)
                 self.vf_optimizer.step()
+
+
+def discount_cumsum(x, discount):
+    """ Function taken from rllab for computing discounted cumulative sums of vectors.
+    https://github.com/rll/rllab
+
+    input:
+        vector x,
+        [x0,
+         x1,
+         x2]
+
+    output:
+        [x0 + discount * x1 + discount^2 * x2,
+         x1 + discount * x2,
+         x2]
+    """
+    return lfilter([1], [1, float(-discount)], x[::-1], axis=0)[::-1]
+
 
 def main():
     # set up training
@@ -411,7 +484,7 @@ def main():
 
         # store data in ppo.buffer
         ppo.buffer.store(obs=torch.FloatTensor(obs).to(device), act=action_agent.flatten(),
-                         rew=torch.FloatTensor([reward/100]), val=torch.FloatTensor([state_value]),
+                         rew=torch.FloatTensor([reward / 100]), val=torch.FloatTensor([state_value]),
                          logp=action_agent_logprob.flatten(), lstm_h_in=lstm_in[0].flatten(),
                          lstm_c_in=lstm_in[1].flatten(), done=torch.FloatTensor([done]))
 
@@ -455,8 +528,8 @@ def main():
 
                 with open("returnFile_running.dat", "a+") as return_file:
                     return_file.write(format(policy_iterations) + "," + format(episodes) + "," +
-                                     '{:.1f}'.format(average_returns[-1]) + "," + '{:.1f}'.format(average_scores[-1]) +
-                                     "\n")
+                                      '{:.1f}'.format(average_returns[-1]) + "," + '{:.1f}'.format(average_scores[-1]) +
+                                      "\n")
 
             # save model and create sample of system behavior
             if policy_iterations % _params_logging.SAVE_INTERVAL == 0:

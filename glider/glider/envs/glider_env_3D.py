@@ -9,7 +9,8 @@ import scipy.integrate as integrate
 import sys
 import os
 from ..utils.wind import Wind
-from parameters import params_environment, params_triangle_soaring, params_decision_maker
+from parameters import params_environment, params_triangle_soaring
+from decision_maker import params_decision_maker
 from subtasks.updraft_exploiter import params_updraft_exploiter
 
 sys.path.append(os.path.join("..", "..", ".."))

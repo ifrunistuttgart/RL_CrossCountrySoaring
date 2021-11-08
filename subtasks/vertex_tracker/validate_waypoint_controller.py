@@ -1,7 +1,7 @@
 import gym
 import torch
 
-import evaluate_decision_maker
+from decision_maker import evaluate_decision_maker
 
 from subtasks.vertex_tracker.waypoint_controller import ControllerWrapper
 from subtasks.vertex_tracker import params_vertex_tracker

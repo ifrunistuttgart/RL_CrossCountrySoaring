@@ -2,14 +2,12 @@
 
 import train_decision_maker
 import numpy as np
-import evaluate_decision_maker
 from subtasks.updraft_exploiter import model_updraft_exploiter
 from plotting import plot_decision_maker
 from subtasks.vertex_tracker.waypoint_controller import ControllerWrapper
-from parameters import params_decision_maker
+from decision_maker import params_decision_maker
 import torch
 import gym
-import glider
 
 device = torch.device('cpu')
 

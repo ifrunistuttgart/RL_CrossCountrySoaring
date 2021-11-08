@@ -9,17 +9,10 @@ import pandas as pd
 import collections
 
 from decision_maker import evaluate_decision_maker, params_decision_maker
-
+from decision_maker.ppo_decision_maker import PPO
 from parameters import params_environment, params_triangle_soaring
 from subtasks.updraft_exploiter import model_updraft_exploiter
 from subtasks.vertex_tracker.waypoint_controller import ControllerWrapper
-from decision_maker.ppo_decision_maker import PPO
-
-# TODO: Remove these unused import statements
-# from torch import Tensor
-# from torch.nn import Linear, LSTM
-# from torch.optim import Adam
-# from parameters.params_decision_maker import ModelParameters, LearningParameters
 
 # Choose device here
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

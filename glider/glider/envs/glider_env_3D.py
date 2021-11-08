@@ -589,50 +589,6 @@ class GliderEnv3D(gym.Env):
 
         return energyReward
 
-    # def get_best_glide(self):
-    #     """ Calculates best glide velocity and angle
-    #
-    #     Returns
-    #     -------
-    #     V_bestGlide: float
-    #         Best gliding velocity
-    #
-    #     gamma_bestGlide: float
-    #         Best gliding angle
-    #     """
-    #     alpha_bestGlide = ((self._params_glider.ST + 2)
-    #                        * np.sqrt(self._params_glider.CD0 * self._params_glider.OE / self._params_glider.ST)) \
-    #                       / (2 * np.sqrt(np.pi))
-    #     cL_bestGlide = (2 * np.pi * alpha_bestGlide * self._params_glider.ST) / (self._params_glider.ST + 2)
-    #     cD_bestGlide = self._params_glider.CD0 \
-    #                    + (1 / (np.pi * self._params_glider.ST * self._params_glider.OE)) * np.power(cL_bestGlide, 2)
-    #
-    #     V_bestGlide = np.sqrt((2 * self._params_glider.M * self._params_physics.G)
-    #                           / (self._params_physics.RHO * self._params_glider.S * cL_bestGlide))
-    #     gamma_bestGlide = -cD_bestGlide / cL_bestGlide
-    #
-    #     return V_bestGlide, gamma_bestGlide
-
-    # def get_updraft_proximity_reward(self):
-    #     """ Calculates reward, depending on proximity to closest updraft
-    #
-    #     Returns
-    #     -------
-    #     reward: float
-    #
-    #     """
-    #     # get distance to closest updraft
-    #     _, rel_updraft_pos_sorted = self.get_rel_updraft_positions()
-    #     shortest_distance = rel_updraft_pos_sorted[-1, 0]
-    #
-    #     # compute simple if/else reward
-    #     reward = 1 if (shortest_distance <= self._params_wind.DELTA) else 0
-    #
-    #     # scale to max. return over episode
-    #     reward *= self._params_sim.TIMESTEP
-    #
-    #     return reward
-
     def get_info(self):
         x = self.state
         info = {"t": self.time, "x": x[0], "y": x[1], "z": x[2], "u": x[3], "v": x[4], "w": x[5]}

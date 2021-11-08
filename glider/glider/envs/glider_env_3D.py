@@ -352,7 +352,8 @@ class GliderEnv3D(gym.Env):
         return observation
 
     def get_sparse_observation(self):
-        """ Observation for decision maker
+        """ Observation for decision maker, which consists of the normalized values for time, altitude
+        and distance to finish
 
         Returns
         -------

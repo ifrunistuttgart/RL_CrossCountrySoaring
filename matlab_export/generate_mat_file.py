@@ -21,7 +21,7 @@ export_decision_maker = True
 export_updraft_exploiter = True
 
 # Load updraft exploiter
-updraft_exploiter = model_updraft_exploiter.ActorCritic().to(device)
+updraft_exploiter = model_updraft_exploiter.UpdraftExploiterActorCritic().to(device)
 updraft_exploiter.load_state_dict(torch.load(updraft_exploiter_file, map_location=torch.device('cpu')))
 
 # Create ppo-object and load decision maker

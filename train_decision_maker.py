@@ -4,47 +4,43 @@ import shutil
 import gym
 import torch
 import torch.nn as nn
+from torch import Tensor
 from torch.distributions import Normal
 import numpy as np
 from scipy.signal import lfilter
 import matplotlib.pyplot as plt
 import pandas as pd
-from torch.nn import Linear
+from torch.nn import Linear, LSTM
+from torch.optim import Adam
 from torch.utils.data import Dataset, TensorDataset
 import collections
 
 import evaluate_decision_maker
 from parameters import params_environment, params_triangle_soaring, params_decision_maker
+from parameters.params_decision_maker import ModelParameters, LearningParameters
 from subtasks.updraft_exploiter import model_updraft_exploiter
 from subtasks.vertex_tracker.waypoint_controller import ControllerWrapper
-#import utils.core as core
 
+# Choose device here
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-
 # device = torch.device("cpu")
 
-
-class ActorCritic(nn.Module):
-    """ This class implements the actor-critic model for the decision maker, which decides between updraft exploiting
-        and vertex tracking
+class DecisionMakerActorCritic(nn.Module):
+    """ Actor-critic model for the decision maker, which decides between updraft exploiting and vertex tracking
 
         Attributes
         ----------
+        _params_model: ModelParameters
+            Shape of the network layers
+
         _params_rl: LearningParameters
-            Hyperparameters for learning
+            Hyperparameters for training
 
-        policy: ActorCritic
-            Actor-Critic model which represents policy
+        actor: LSTMActor
+            Actor network which has a linear input layer, a LSTM hidden layer and a linear output layer
 
-        policy_old: ActorCritic
-            Policy of previous training step
-
-        optimizer: Adam
-            Set Adam as optimizer for stochastic gradient descent (SGD) algorithm
-
-        MseLoss: MSELoss
-            Use mean squared error as loss function for training
+        critic: Critic
+            Critic network with linear input, hidden and output layer
     """
 
     def __init__(self):
@@ -60,6 +56,31 @@ class ActorCritic(nn.Module):
         self.critic = Critic(obs_dim=self._params_model.DIM_IN, hidden_size=self._params_model.DIM_HIDDEN)
 
     def act(self, state, lstm_hidden, validation_mask=False):
+        """ Evaluates current actor model for one single state (observation). The observation contains time, altitude
+            and distance to finish
+
+        Parameters
+        ----------
+        state : Tensor
+            Single observation for decision maker (time, altitude and distance to finish)
+
+        lstm_hidden : Tensor
+            Previous hidden LSTM state
+
+        validation_mask : bool
+            Deactivates random action sampling
+
+        Returns
+        -------
+        action : Tensor
+            Sampled probability for updraft exploitation or vertex tracking
+
+        action_logprob : Tensor
+            Logarithmic probability of action
+
+        lstm_hidden : Tensor
+            New hidden LSTM state
+        """
         # evaluate current actor to sample action for rollout
         action_mean, lstm_hidden = self.actor.forward(state, lstm_hidden)
         dist = Normal(action_mean, self._params_rl.SIGMA * (not validation_mask))
@@ -69,21 +90,79 @@ class ActorCritic(nn.Module):
         return action, action_logprob, lstm_hidden
 
     def evaluate_actor(self, sampled_state, sampled_action, sampled_lstm_hidden):
+        """ Evaluates actor network for sampled inputs during PPO update step
+
+        Parameters
+        ----------
+        sampled_state : Tensor
+            Sample of states from PPO Buffer
+
+        sampled_action : Tensor
+            Sampled actions from PPO buffer
+
+        sampled_lstm_hidden : Tensor
+            Sampled lstm states from PPO buffer
+
+        Returns
+        -------
+        flattened_action_logprobs : Tensor
+            Logprobs for all sampled actions as a flattened 1D array
+
+        """
         # evaluate actor for sampled states
         action_mean, _ = self.actor.forward(sampled_state, sampled_lstm_hidden)
         dist = Normal(torch.flatten(action_mean, 1), self._params_rl.SIGMA)
 
         # get logprobs for distribution subject to current actor, evaluated for sampled actions
         action_logprobs = dist.log_prob(sampled_action)
+        flattened_action_logprobs = action_logprobs.flatten()
 
-        return action_logprobs.flatten()
+        return flattened_action_logprobs
 
     def reset_lstm(self):
-        return torch.zeros(1, 1, self._params_model.DIM_LSTM, device=device), \
-               torch.zeros(1, 1, self._params_model.DIM_LSTM, device=device)
+        """ Resets LSTM inital and cell state
 
+        Returns
+        -------
+        h_0 : Tensor
+            Reset initial state of LSTM
+
+        c_0 : Tensor
+            Reset cell state of LSTM
+        """
+
+        h_0 = torch.zeros(1, 1, self._params_model.DIM_LSTM, device=device)
+        c_0 = torch.zeros(1, 1, self._params_model.DIM_LSTM, device=device)
+
+        return h_0, c_0
 
 class LSTMActor(nn.Module):
+    """ This class implements the actor model for the decision maker. It has three layers. Input and output layers are
+        simple linear layers. The hidden layer is a Long Short-Term Memory (LSTM) layer
+
+        Attributes
+        ----------
+        input_layer : torch.nn.Linear
+            Linear input layer
+
+        lstm : torch.nn.LSTM
+            Hidden LSTM layer
+
+        output_layer : torch.nn.Linear
+            Linear output layer
+
+        _obs_dim : object
+            Dimension of observation vector
+
+        _act_dim : object
+            Dimension of action space
+
+        _hidden_size : object
+            Dimension of LSTM input size.
+
+        _lstm_size : object
+            Dimension of LSTM layer
+    """
     def __init__(self, obs_dim, act_dim, hidden_size, lstm_size):
         super().__init__()
 
@@ -97,6 +176,23 @@ class LSTMActor(nn.Module):
         self._lstm_size = lstm_size
 
     def forward(self, observation, lstm_hidden):
+        """ Computes forward pass through actor network of decision maker. Output is a probability for using the
+            updraft exploiter sub-policy
+
+        Parameters
+        ----------
+        observation : Tensor
+            Observation for decision maker (time, altitude and distance to finish). Can be a sequence of states
+            with variable length
+
+        lstm_hidden :
+            Previous state of hidden LSTM layer
+
+        Returns
+        -------
+        action : float
+            Probability for updraft exploitation
+        """
         # evaluate input
         x = observation.reshape(-1, self._obs_dim).to(device)  # seq_len x  input_size
         x = torch.tanh(self.input_layer(x))
@@ -117,21 +213,21 @@ class LSTMActor(nn.Module):
 
 
 class Critic(nn.Module):
-    """ This class implements the actor-critic model for the decision maker, which decides between updrat exploiting
+    """ This class implements the actor-critic model for the decision maker, which decides between updraft exploiting
         and vertex tracking
 
         Attributes
         ----------
-        input_layer: torch.nn.Linear
+        input_layer : torch.nn.Linear
             Input layer of critic network
 
-        hidden_layer: torch.nn.Linear
+        hidden_layer : torch.nn.Linear
             Hidden layer of critic network
 
-        output_layer: torch.nn.Linear
+        output_layer : torch.nn.Linear
             Output layer of critic network
 
-        _obs_dim: int
+        _obs_dim : int
             Dimension of input to critic network
     """
 
@@ -145,15 +241,18 @@ class Critic(nn.Module):
         self._obs_dim = obs_dim
 
     def forward(self, observation):
-        """ Computes forward pass trough critic network
+        """ Computes forward pass trough critic network, which puts out the value of the current
+            state (observation)
 
         Parameters
         ----------
-        observation :
+        observation : Tensor
+            Observation for decision maker (time, altitude and distance to finish)
 
         Returns
         -------
-
+        value : float
+            State value of observation
         """
         # evaluate input
         x = observation.reshape(-1, self._obs_dim).to(device)  # batch_size x  input_size
@@ -169,9 +268,57 @@ class Critic(nn.Module):
 
 
 class PPOBuffer:
-    """
-    A buffer for storing trajectories experienced by a PPO agent interacting
-    with the environment.
+    """ A buffer for storing trajectories experienced by a PPO agent interacting
+        with the environment.
+
+        Attributes
+        ----------
+
+        obs_buf : Tensor
+            Observation buffer
+
+        act_buf : Tensor
+            Action buffer
+
+        adv_buf : Tensor
+            Advantage estimation buffer
+
+        rew_buf : Tensor
+            Reward buffer
+
+        ret_buf : Tensor
+            Return buffer
+
+        val_buf : Tensor
+            State value buffer
+
+        logp_buf : Tensor
+            Log probability buffer
+
+        lstm_h_in_buf : Tensor
+            LSTM hidden state buffer
+
+        lstm_c_in_buf : Tensor
+            LSTM cell state buffer
+
+        done_buf : Tensor
+            Done flag buffer
+
+        gamma : float
+            Discount factor
+
+        lam : float
+            Lambda for Generalized Advantage Estimation (GAE)
+
+        ptr: int
+            Pointer to indicate storage position in buffer
+
+        path_start_idx : int
+            Start index of current trajectory
+
+        max_size : int
+            Maximum buffe size
+
     """
 
     def __init__(self, obs_dim, act_dim, batch_size, lstm_hidden_size, gamma=0.99, lam=0.95):
@@ -189,8 +336,33 @@ class PPOBuffer:
         self.ptr, self.path_start_idx, self.max_size = 0, 0, batch_size
 
     def store(self, obs, act, rew, val, logp, lstm_h_in, lstm_c_in, done):
-        """
-        Append one timestep of agent-environment interaction to the buffer.
+        """ Append one timestep of agent-environment interaction to the buffer at pointer position
+
+            Parameters
+            ----------
+            obs : Tensor
+                Observation at timestep
+
+            act : Tensor
+                Action at timestep
+
+            rew : float
+                Reward at timestep
+
+            val : float
+                State value at timestep
+
+            logp : Tensor
+                Log probability at timestep
+
+            lstm_h_in :
+                LSTM hidden state at timestep
+
+            lstm_c_in :
+                LSTM cell state at timestep
+
+            done : bool
+                Done flag at timestep
         """
         assert self.ptr < self.max_size  # buffer has to have room so you can store
         self.obs_buf[self.ptr] = obs
@@ -204,18 +376,20 @@ class PPOBuffer:
         self.ptr += 1
 
     def finish_path(self, last_val=0):
-        """
-        Call this at the end of a trajectory, or when one gets cut off
-        by an epoch ending. This looks back in the buffer to where the
-        trajectory started, and uses rewards and value estimates from
-        the whole trajectory to compute advantage estimates with GAE-Lambda,
-        as well as compute the rewards-to-go for each state, to use as
-        the targets for the value function.
-        The "last_val" argument should be 0 if the trajectory ended
-        because the agent reached a terminal state (died), and otherwise
-        should be V(s_T), the value function estimated for the last state.
-        This allows us to bootstrap the reward-to-go calculation to account
-        for timesteps beyond the arbitrary episode horizon (or epoch cutoff).
+        """ Call this at the end of a trajectory, or when one gets cut off by an epoch ending. This looks back in the
+            buffer to where the trajectory started, and uses rewards and value estimates from the whole trajectory to
+            compute advantage estimates with GAE-Lambda, as well as compute the rewards-to-go for each state, to use as
+            the targets for the value function.
+            The "last_val" argument should be 0 if the trajectory ended because the agent reached a terminal
+            state (died), and otherwise should be V(s_T), the value function estimated for the last state.
+            This allows us to bootstrap the reward-to-go calculation to account for timesteps beyond the arbitrary
+            episode horizon (or epoch cutoff).
+
+            Parameters
+            ----------
+            last_val : float
+                Reward and state value for terminal state
+        
         """
 
         path_slice = slice(self.path_start_idx, self.ptr)
@@ -233,9 +407,14 @@ class PPOBuffer:
 
         self.path_start_idx = self.ptr
 
-    def get(self, ):
-        """
-        Gets all of the data from the buffer and resets pointer.
+    def get(self):
+        """ Gets all of the data from the buffer and resets pointer.
+
+            Returns
+            -------
+            return_data : dictionary
+                Dictionary with content of PPO buffer. Keys are: obs, act, ret, adv, logp, lstm_h_in, lstm_c_in, done with
+                the corresponding values from buffer
         """
         assert self.ptr == self.max_size  # buffer has to be full before you can get
         self.ptr, self.path_start_idx = 0, 0
@@ -245,10 +424,23 @@ class PPOBuffer:
 
         data = dict(obs=self.obs_buf, act=self.act_buf, ret=self.ret_buf, adv=self.adv_buf, logp=self.logp_buf,
                     lstm_h_in=self.lstm_h_in_buf, lstm_c_in=self.lstm_c_in_buf, done=self.done_buf)
-        return {k: torch.as_tensor(v, dtype=torch.float32, device=device) for k, v in data.items()}
+        return_data = {k: torch.as_tensor(v, dtype=torch.float32, device=device) for k, v in data.items()}
+
+        return return_data
 
 
 class MyDataset(Dataset):
+    """ Extends pytorch's Dataset class to create dataset objects from the PPO buffer data
+
+        Attributes
+        ----------
+        data: TensorDataset
+            Data from PPO buffer
+        
+        window: int
+            Length of sequence, which is used for stochastic gradient descent (SGD)
+    """
+
     def __init__(self, data, window):
         self.data = data
         self.window = window
@@ -262,6 +454,38 @@ class MyDataset(Dataset):
 
 
 class PPO:
+    """ Implements Proximal Policy Optimization (PPO) for training of the decision maker
+
+        Attributes
+        ----------
+        _params_rl: LearningParameters
+            Hyperparameters for training the actor-critic model
+
+        _params_model: ModelParameters
+            Hyperparameters which describe the ANN-architecture of the decision maker
+
+        buffer: PPOBuffer
+            Buffer object to store the trajectories of the glider during interaction with the environment
+
+        model: DecisionMakerActorCritic
+            Actor-Critic model of the decision maker
+
+        pi_optimizer: Adam
+            Policy optimizer
+
+        vf_optimizer: Adam
+            Value function optimizer
+
+        vertex_tracker: object
+            Control algorithm for vertex tracking
+
+        updraft_exploiter: UpdraftExploiterActorCritic
+            Updraft exploiter model
+
+        env: GliderEnv3D
+            Simulation of glider environment
+        """
+
     def __init__(self, vertex_tracker, updraft_exploiter, environment):
         # instantiate parameters
         self._params_rl = params_decision_maker.LearningParameters()
@@ -272,7 +496,9 @@ class PPO:
                                 self._params_model.DIM_LSTM, gamma=self._params_rl.GAMMA, lam=self._params_rl.LAMBDA)
 
         # instantiate actor-critic model
-        self.model = ActorCritic().to(device)
+        self.model = DecisionMakerActorCritic().to(device)
+
+        """ Put in filepath to a valid decision maker .pt-file and uncomment to use a already trained model"""
         # self.model.actor.load_state_dict(torch.load("decision_maker_actor_final_03-November-2020_15-17.pt"))
         # self.model.critic.load_state_dict(torch.load("decision_maker_critic_final_03-November-2020_15-17.pt"))
 
@@ -286,6 +512,36 @@ class PPO:
         self.env = environment
 
     def select_action(self, state, lstm_hidden, validation_mask=False):
+        """ Select action (control command) either from updraft exploiter or vertex tracker
+
+        Parameters
+        ----------
+        state : Tensor
+            Observation for decision maker (time, altitude and distance to finish)
+
+        lstm_hidden : Tensor
+             Previous state of hidden LSTM layer
+
+        validation_mask : bool
+            Deactivates random action sampling for validation
+
+        Returns
+        -------
+        action_env : Tensor
+            Action which is used for interaction with the environment
+
+        action_agent :
+            Action of the decision maker
+
+        action_agent_logprob :
+            Logarithmic probability of decision maker action
+
+        state_value :
+            Computed state value from the critic network
+
+        lstm_hidden :
+            Hidden state of the decision maker LSTM
+        """
         # evaluate decision maker
         action_agent, action_agent_logprob, lstm_hidden = self.model.act(state, lstm_hidden,
                                                                          validation_mask=validation_mask)
@@ -313,6 +569,9 @@ class PPO:
         return action_env, action_agent, action_agent_logprob, state_value, lstm_hidden
 
     def update(self):
+        """ Calculate policy update for actor and critic network
+
+        """
 
         # get sampled data
         data = self.buffer.get()
@@ -396,23 +655,7 @@ def discount_cumsum(x, discount):
     """
     return lfilter([1], [1, float(-discount)], x[::-1], axis=0)[::-1]
 
-
-def main():
-    # set up training
-    env = gym.make('glider3D-v0', agent='decision_maker')
-
-    # instantiate vertex-tracker and updraft-exploiter
-    waypoint_controller = ControllerWrapper(env)
-    updraft_exploiter = model_updraft_exploiter.ActorCritic().to(device)
-    updraft_exploiter.load_state_dict(torch.load("updraft_exploiter_actor_critic_final_17-December-2020_11-06.pt"))
-
-    # instantiate agent
-    ppo = PPO(waypoint_controller, updraft_exploiter, env)
-
-    # load parameters
-    _params_rl = params_decision_maker.LearningParameters()
-    _params_agent = params_decision_maker.AgentParameters()
-    _params_logging = params_decision_maker.LoggingParameters()
+def create_experiment_folder(_params_rl, _params_agent, _params_logging):
 
     # create folder to store data for the experiment running
     experimentID = 1
@@ -443,17 +686,42 @@ def main():
         format(vars(params_environment.WindParameters())))
     parameterFile.close()
 
+    # set up file to save average returns and scores
+    returnFile = open("returnFile_running.dat", "w")
+    returnFile.write("iterations,episodes,avg_returns,avg_scores\n")
+    returnFile.close()
+
+    return parameterFile, returnFile
+
+
+def run_decision_maker_training():
+    """ Controls training process of the decision maker
+
+    """
+    # set up training
+    env = gym.make('glider3D-v0', agent='decision_maker')
+
+    # instantiate vertex-tracker and updraft-exploiter
+    waypoint_controller = ControllerWrapper(env)
+    updraft_exploiter = model_updraft_exploiter.UpdraftExploiterActorCritic().to(device)
+    updraft_exploiter.load_state_dict(torch.load("updraft_exploiter_actor_critic_final_17-December-2020_11-06.pt"))
+
+    # instantiate agent
+    ppo = PPO(waypoint_controller, updraft_exploiter, env)
+
+    # load parameters
+    _params_rl = params_decision_maker.LearningParameters()
+    _params_agent = params_decision_maker.AgentParameters()
+    _params_logging = params_decision_maker.LoggingParameters()
+
+    parameterFile, returnFile = create_experiment_folder(_params_rl, _params_agent, _params_logging)
+
     # set random seed
     if _params_rl.SEED:
         print("Random Seed: {}".format(_params_rl.SEED))
         torch.manual_seed(_params_rl.SEED)
         env.seed(_params_rl.SEED)
         np.random.seed(_params_rl.SEED)
-
-    # set up file to save average returns and scores
-    return_file = open("returnFile_running.dat", "w")
-    return_file.write("iterations,episodes,avg_returns,avg_scores\n")
-    return_file.close()
 
     # initialize logging variables
     returns = collections.deque(maxlen=10)
@@ -566,4 +834,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    run_decision_maker_training()

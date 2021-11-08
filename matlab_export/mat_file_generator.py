@@ -74,7 +74,7 @@ class MatFileExporter:
 
         Parameters
         ----------
-        updraft_exploiter : model_updraft_exploiter.ActorCritic
+        updraft_exploiter : model_updraft_exploiter.DecisionMakerActorCritic
             updraft_exploiter object which contains parameters of trained model
 
         filepath : str
@@ -104,7 +104,7 @@ class MatFileExporter:
 
         Parameters
         ----------
-        decision_maker : model_updraft_exploiter.ActorCritic
+        decision_maker : model_updraft_exploiter.DecisionMakerActorCritic
             updraft_exploiter object which contains parameters of trained model
 
         filepath : str

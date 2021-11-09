@@ -1,5 +1,4 @@
 *.pyc
-*.png
 .idea/
 __pycache__/
 glider/glider2D.egg-info/
@@ -12,3 +11,4 @@ archive/
 *.rej
 matlab_export/mat_files/
 matlab_export/*.pt
+plotting/resultant_trajectory_iter_4000.png

@@ -1,4 +1,4 @@
-## Hierarchical Reinforcement Learning Approach Towards Autonomous Cross-Country Soaring
+## Hierarchical Reinforcement Learning Approach Towards Autonomous Cross-Country Soaring <img src="images/logo.png" align="right" width=100/>
 
 ### Overview
 Autonomous soaring constitutes an appealing task for applying reinforcement learning

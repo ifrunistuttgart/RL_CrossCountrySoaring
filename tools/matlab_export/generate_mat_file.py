@@ -3,9 +3,9 @@ This scripts is used to export the weights and biases from the .pt-Files of updr
 to .mat-Files
 """
 
-import train_decision_maker
-from subtasks.updraft_exploiter import model_updraft_exploiter
-from subtasks.vertex_tracker.waypoint_controller import ControllerWrapper
+from policy_training import train_decision_maker
+from policy_training.subtasks.updraft_exploiter import model_updraft_exploiter
+from policy_training.subtasks.vertex_tracker.waypoint_controller import ControllerWrapper
 from mat_file_generator import MatFileExporter
 import torch
 import gym

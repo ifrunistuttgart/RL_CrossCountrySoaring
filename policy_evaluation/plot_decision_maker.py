@@ -1,4 +1,4 @@
-""" This script is used for running the decision maker policy and test_trained_policies the result. It runs one episode in the
+""" This script is used for running the decision maker policy and policy_evaluation the result. It runs one episode in the
     GliderEnv3D environment with a given updraft exploiter policy.
 """
 
@@ -9,7 +9,7 @@ import matplotlib.gridspec as gridspec
 from matplotlib import cm
 import warnings
 
-from parameters import params_triangle_soaring, params_environment
+from policy_training.parameters import params_triangle_soaring, params_environment
 
 
 def main(env, controller, iteration, params_agent, validation_mask=False):

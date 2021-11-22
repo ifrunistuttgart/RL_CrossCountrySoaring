@@ -3,11 +3,10 @@
 """
 import numpy as np
 
-from parameters import params_triangle_soaring, params_environment
-from parameters.params_environment import PhysicsParameters
-from parameters.params_triangle_soaring import TaskParameters
-from subtasks.vertex_tracker import params_vertex_tracker
-from subtasks.vertex_tracker.params_vertex_tracker import AgentParameters, ControlParameters
+from policy_training.parameters import params_triangle_soaring, params_environment
+from policy_training.parameters.params_triangle_soaring import TaskParameters
+from policy_training.subtasks.vertex_tracker import params_vertex_tracker
+from policy_training.subtasks.vertex_tracker.params_vertex_tracker import ControlParameters
 
 
 class ControllerWrapper:

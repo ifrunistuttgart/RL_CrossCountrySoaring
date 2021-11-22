@@ -1,15 +1,15 @@
 *.pyc
 .idea/
 __pycache__/
-glider/glider2D.egg-info/
-glider/glider/__pycache__/
+policy_training/glider/glider2D.egg-info/
+policy_training/glider/glider/__pycache__/
 evaluateGlider_test.py
 PPO_continuous.py
 * - Kopie.py
 archive/
 *experiment*
 *.rej
-matlab_export/mat_files/
+tools/matlab_export/mat_files/
 matlab_export/*.pt
-test_trained_policies/resultant_trajectory_iter_4000.png
-test_trained_policies/Samples*
+policy_evaluation/resultant_trajectory_iter_4000.png
+policy_evaluation/Samples*

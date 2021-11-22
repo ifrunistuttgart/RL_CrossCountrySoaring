@@ -8,11 +8,11 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import collections
 
-from decision_maker import evaluate_decision_maker, params_decision_maker
-from decision_maker.ppo_decision_maker import PPO
-from parameters import params_environment, params_triangle_soaring
-from subtasks.updraft_exploiter import model_updraft_exploiter
-from subtasks.vertex_tracker.waypoint_controller import ControllerWrapper
+from policy_training.decision_maker import evaluate_decision_maker, params_decision_maker
+from policy_training.decision_maker.ppo_decision_maker import PPO
+from policy_training.parameters import params_triangle_soaring, params_environment
+from policy_training.subtasks.updraft_exploiter import model_updraft_exploiter
+from policy_training.subtasks.vertex_tracker.waypoint_controller import ControllerWrapper
 
 # Choose device here
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -28,7 +28,7 @@ def create_experiment_folder(_params_rl, _params_agent, _params_logging):
         dirName = "{}_".format(experimentID) + dirName.split('_', 1)[1]
     os.mkdir(dirName)
     shutil.copytree(os.getcwd(), os.path.join(dirName, "Sources_unzipped"),
-                    ignore=shutil.ignore_patterns('*experiment*', 'archive', 'tests', '.git*', 'rl_ccs_experiments',
+                    ignore=shutil.ignore_patterns('*experiment*', 'archive', 'tests', '.git*', '../rl_ccs_experiments',
                                                   '.idea', '__pycache__', 'README*'))
     os.chdir(dirName)
     shutil.make_archive("Sources", 'zip', "Sources_unzipped")

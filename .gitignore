@@ -11,4 +11,5 @@ archive/
 *.rej
 matlab_export/mat_files/
 matlab_export/*.pt
-plotting/resultant_trajectory_iter_4000.png
+test_trained_policies/resultant_trajectory_iter_4000.png
+test_trained_policies/Samples*

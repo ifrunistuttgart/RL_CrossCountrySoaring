@@ -1,8 +1,7 @@
-""" This script is used for evaluating the decision maker policy. It runs one episode in the GliderEnv3D
-    environment with a given updraft exploiter policy.
+""" This script is used for running the decision maker policy and test_trained_policies the result. It runs one episode in the
+    GliderEnv3D environment with a given updraft exploiter policy.
 """
-import gym
-import glider
+
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
@@ -13,7 +12,7 @@ import warnings
 from parameters import params_triangle_soaring, params_environment
 
 
-def main(env, controller, n_iter, params_agent, validation_mask=False):
+def main(env, controller, iteration, params_agent, validation_mask=False):
     """ Evaluates decision maker in given environment and plots result
 
     Parameters
@@ -24,8 +23,8 @@ def main(env, controller, n_iter, params_agent, validation_mask=False):
     controller : PPO
         Decision maker policy
 
-    n_iter : int
-        Number of iterations
+    iteration : int
+        Number of current plot
 
     params_agent : AgentParameters
         Parameters for decision maker
@@ -69,8 +68,8 @@ def main(env, controller, n_iter, params_agent, validation_mask=False):
     # plot position and control trajectory
     fig = plt.figure()
     fig.set_size_inches(11.69, 8.27)  # DinA4
-    fig.suptitle("Sample after {} policy iterations:\nVertices hit: {}, Return: {:.1f}, Score: {}"
-                 .format(n_iter, (env.lap_counter * 3 + env.vertex_counter), ret, env.lap_counter * 200))
+    fig.suptitle("Sample {} :\nVertices hit: {}, Return: {:.1f}, Score: {}"
+                 .format(iteration, (env.lap_counter * 3 + env.vertex_counter), ret, env.lap_counter * 200))
 
     """ The next section generates 4 subplots, which show the North-East trajectory, mu_cmd, alpha_cmd and
         height over time.
@@ -155,15 +154,13 @@ def main(env, controller, n_iter, params_agent, validation_mask=False):
     # store flight and updraft data to array and export csv-File
     flight_data = np.array([np.array(pos_list)[:, 1], np.array(pos_list)[:, 0], -np.array(pos_list)[:, 2], np.arange(0, 1801), mu, alpha]).T
     updraft_data = updraft_position.T
-    np.savetxt('dm_eval_data.csv', flight_data, fmt='%4.4f', delimiter=',', header='x,y,z,t,mu,alpha', comments='')
-    np.savetxt('updrafts.csv', updraft_data, fmt='%4.4f', delimiter=',', comments='')
+    np.savetxt('./Samples/dm_eval_data_{}.csv'.format(iteration), flight_data, fmt='%4.4f', delimiter=',', header='x,y,z,t,mu,alpha', comments='')
+    np.savetxt('./Samples/updrafts_{}.csv'.format(iteration), updraft_data, fmt='%4.4f', delimiter=',', comments='')
 
     # save plot to .png-file
     warnings.filterwarnings("ignore", category=UserWarning, module="backend_interagg")
     grid.tight_layout(fig, rect=[0, 0.03, 1, 0.95])
-    plt.savefig("resultant_trajectory_iter_{}".format(n_iter) + ".png", dpi=400)
-    plt.show()
+    plt.savefig("./Samples/resultant_trajectory_iter_{}".format(iteration) + ".png", dpi=400)
+    # plt.show()
 
-    # export plot to tikz file
-    plt.close(fig)
     env.close()

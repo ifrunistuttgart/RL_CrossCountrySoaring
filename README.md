@@ -16,7 +16,7 @@ and the flight test results can be found in our most recent paper:
 > Hier könnte ihr Paper stehen! Idealerweise direkt mit Bibtex key
 
 
-![Dummy image](images/example_image.png)
+![Dummy image](images/title_image.png)
 
 ### Getting started
 This repository contains the full code, which was used to train our agent. 

@@ -13,8 +13,12 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # device = torch.device("cpu")
 
 class PPOBuffer:
-    """ A buffer for storing trajectories experienced by a PPO agent interacting
-        with the environment.
+    """ Partly adopted from 'Spinning Up in Deep Reinforcement Learning' (2018) by Joshua Achiam, OpenAI
+        https://github.com/openai/spinningup/blob/master/spinup/algos/pytorch/ppo/ppo.py
+
+        A buffer for storing trajectories experienced by a PPO agent interacting
+        with the environment, and using Generalized Advantage Estimation (GAE-Lambda)
+        for calculating the advantages of state-action pairs.
 
         Attributes
         ----------

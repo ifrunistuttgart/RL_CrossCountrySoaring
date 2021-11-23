@@ -13,3 +13,6 @@ tools/matlab_export/mat_files/
 matlab_export/*.pt
 policy_evaluation/resultant_trajectory_iter_4000.png
 policy_evaluation/Samples/*
+rl_ccs_experiments
+.gitmodules
+

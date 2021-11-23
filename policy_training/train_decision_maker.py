@@ -8,11 +8,11 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import collections
 
-from policy_training.decision_maker import evaluate_decision_maker, params_decision_maker
-from policy_training.decision_maker.ppo_decision_maker import PPO
-from policy_training.parameters import params_triangle_soaring, params_environment
-from policy_training.subtasks.updraft_exploiter import model_updraft_exploiter
-from policy_training.subtasks.vertex_tracker.waypoint_controller import ControllerWrapper
+from decision_maker import evaluate_decision_maker, params_decision_maker
+from decision_maker.ppo_decision_maker import PPO
+from parameters import params_triangle_soaring, params_environment
+from subtasks.updraft_exploiter import model_updraft_exploiter
+from subtasks.vertex_tracker.waypoint_controller import ControllerWrapper
 
 # Choose device here
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

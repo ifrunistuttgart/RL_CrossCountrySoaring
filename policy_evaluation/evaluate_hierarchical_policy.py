@@ -1,15 +1,17 @@
 " Script to export matplotlib plots from training to tikz"
 
-from policy_training.decision_maker.ppo_decision_maker import PPO
-from policy_training.subtasks.updraft_exploiter import model_updraft_exploiter
+from decision_maker.ppo_decision_maker import PPO
+from subtasks.updraft_exploiter import model_updraft_exploiter
 from policy_evaluation import plot_decision_maker
-from policy_training.subtasks.vertex_tracker.waypoint_controller import ControllerWrapper
-from policy_training.decision_maker import params_decision_maker
+from subtasks.vertex_tracker.waypoint_controller import ControllerWrapper
+from decision_maker import params_decision_maker
 import torch
 import gym
+from glider.envs.glider_env_3D import GliderEnv3D
 
 device = torch.device('cpu')
 env = gym.make('glider3D-v0', agent='decision_maker')
+#env = GliderEnv3D(agent='decision_maker')
 
 # set seed to fix updraft distribution and trajectory
 #env.seed(42)

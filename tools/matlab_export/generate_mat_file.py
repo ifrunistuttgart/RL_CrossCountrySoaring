@@ -4,9 +4,10 @@ to .mat-Files
 """
 
 from policy_training import train_decision_maker
-from policy_training.subtasks.updraft_exploiter import model_updraft_exploiter
-from policy_training.subtasks.vertex_tracker.waypoint_controller import ControllerWrapper
+from subtasks.updraft_exploiter import model_updraft_exploiter
+from subtasks.vertex_tracker.waypoint_controller import ControllerWrapper
 from mat_file_generator import MatFileExporter
+from glider.envs.glider_env_3D import GliderEnv3D
 import torch
 import gym
 
@@ -25,7 +26,9 @@ updraft_exploiter = model_updraft_exploiter.UpdraftExploiterActorCritic().to(dev
 updraft_exploiter.load_state_dict(torch.load(updraft_exploiter_file, map_location=torch.device('cpu')))
 
 # Create ppo-object and load decision maker
-env = gym.make('glider3D-v0', agent='decision_maker')
+# env = gym.make('glider3D-v0', agent='decision_maker')
+env = GliderEnv3D(agent='decision_maker')
+
 waypoint_controller = ControllerWrapper(env)
 ppo = train_decision_maker.PPO(waypoint_controller, updraft_exploiter, env)
 ppo.model.actor.to(device)

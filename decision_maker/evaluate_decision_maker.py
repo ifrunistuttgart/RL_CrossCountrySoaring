@@ -8,7 +8,7 @@ import matplotlib.gridspec as gridspec
 from matplotlib import cm
 import warnings
 
-from policy_training.parameters import params_triangle_soaring, params_environment
+from parameters import params_triangle_soaring, params_environment
 
 
 def main(env, controller, n_iter, params_agent, validation_mask=False):

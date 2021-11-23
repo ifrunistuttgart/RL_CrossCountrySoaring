@@ -18,7 +18,7 @@
 """
 
 import numpy as np
-from policy_training.parameters.params_triangle_soaring import TaskParameters
+from parameters.params_triangle_soaring import TaskParameters
 
 
 class LearningParameters:

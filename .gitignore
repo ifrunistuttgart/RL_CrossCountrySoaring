@@ -12,4 +12,4 @@ archive/
 tools/matlab_export/mat_files/
 matlab_export/*.pt
 policy_evaluation/resultant_trajectory_iter_4000.png
-policy_evaluation/Samples*
+policy_evaluation/Samples/*

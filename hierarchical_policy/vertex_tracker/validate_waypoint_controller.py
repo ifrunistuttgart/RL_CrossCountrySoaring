@@ -1,10 +1,10 @@
 import gym
 import torch
 
-from decision_maker import evaluate_decision_maker
+from hierarchical_policy.decision_maker import evaluate_decision_maker
 
-from subtasks.vertex_tracker.waypoint_controller import ControllerWrapper
-from subtasks.vertex_tracker import params_vertex_tracker
+from hierarchical_policy.vertex_tracker.waypoint_controller import ControllerWrapper
+from hierarchical_policy.vertex_tracker import params_vertex_tracker
 
 device = torch.device("cuda:0")
 

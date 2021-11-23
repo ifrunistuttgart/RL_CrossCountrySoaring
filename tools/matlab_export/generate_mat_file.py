@@ -4,18 +4,17 @@ to .mat-Files
 """
 
 from policy_training import train_decision_maker
-from subtasks.updraft_exploiter import model_updraft_exploiter
-from subtasks.vertex_tracker.waypoint_controller import ControllerWrapper
+from hierarchical_policy.updraft_exploiter import model_updraft_exploiter
+from hierarchical_policy.vertex_tracker.waypoint_controller import ControllerWrapper
 from mat_file_generator import MatFileExporter
 from glider.envs.glider_env_3D import GliderEnv3D
 import torch
-import gym
 
 device = torch.device('cpu')
 
 # Enter filepath for updraft_exploiter and decision_maker
-updraft_exploiter_file = "updraft_exploiter_actor_critic_final_02-September-2021_19-43.pt"
-decision_maker_file = "decision_maker_actor_final_12-April-2021_08-37.pt"
+updraft_exploiter_file = "policies/updraft_exploiter_actor_critic_final_17-October-2021_20-21.pt"
+decision_maker_file = "policies/decision_maker_actor_final_30-October-2021_11-02.pt"
 
 # Choose export targets
 export_decision_maker = True
@@ -35,8 +34,8 @@ ppo.model.actor.to(device)
 ppo.model.actor.load_state_dict(torch.load(decision_maker_file, map_location=torch.device('cpu')))
 
 # create filespaths for .mat-files
-path_decision_maker = "./mat_files/{}".format(decision_maker_file.replace('.pt', '.mat'))
-path_updraft_exploiter = "./mat_files/{}".format(updraft_exploiter_file.replace('.pt', '.mat'))
+path_decision_maker = "./mat_files/{}".format(decision_maker_file.replace('.pt', '.mat').replace('policies/', ''))
+path_updraft_exploiter = "./mat_files/{}".format(updraft_exploiter_file.replace('.pt', '.mat').replace('policies/', ''))
 
 # Export updraft exploiter
 if export_updraft_exploiter:

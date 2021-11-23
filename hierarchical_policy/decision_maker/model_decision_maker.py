@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from decision_maker import params_decision_maker
+from hierarchical_policy.decision_maker import params_decision_maker
 from torch.distributions import Normal
 
 # Choose device here

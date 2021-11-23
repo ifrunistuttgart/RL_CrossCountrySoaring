@@ -5,8 +5,8 @@ import numpy as np
 
 from parameters import params_triangle_soaring, params_environment
 from parameters.params_triangle_soaring import TaskParameters
-from subtasks.vertex_tracker import params_vertex_tracker
-from subtasks.vertex_tracker.params_vertex_tracker import ControlParameters
+from hierarchical_policy.vertex_tracker import params_vertex_tracker
+from hierarchical_policy.vertex_tracker.params_vertex_tracker import ControlParameters
 
 
 class ControllerWrapper:

@@ -8,15 +8,18 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import collections
 
-from decision_maker import evaluate_decision_maker, params_decision_maker
-from decision_maker.ppo_decision_maker import PPO
+from hierarchical_policy.decision_maker import evaluate_decision_maker, params_decision_maker
+from hierarchical_policy.decision_maker.ppo_decision_maker import PPO
 from parameters import params_triangle_soaring, params_environment
-from subtasks.updraft_exploiter import model_updraft_exploiter
-from subtasks.vertex_tracker.waypoint_controller import ControllerWrapper
+from hierarchical_policy.updraft_exploiter import model_updraft_exploiter
+from hierarchical_policy.vertex_tracker.waypoint_controller import ControllerWrapper
+from glider.envs.glider_env_3D import GliderEnv3D
 
 # Choose device here
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-# device = torch.device("cpu")
+
+# Choose filepath of updraft_exploiter
+updraft_exploiter_filepath = "../results_paper/policies/updraft_exploiter_actor_critic_final_17-October-2021_20-21.pt"
 
 def create_experiment_folder(_params_rl, _params_agent, _params_logging):
 
@@ -62,12 +65,20 @@ def run_decision_maker_training():
 
     """
     # set up training
-    env = gym.make('glider3D-v0', agent='decision_maker')
+    # env = gym.make('glider3D-v0', agent='decision_maker')
+    env = GliderEnv3D(agent='decision_maker')
 
     # instantiate vertex-tracker and updraft-exploiter
     waypoint_controller = ControllerWrapper(env)
     updraft_exploiter = model_updraft_exploiter.UpdraftExploiterActorCritic().to(device)
-    updraft_exploiter.load_state_dict(torch.load("updraft_exploiter_actor_critic_final_17-December-2020_11-06.pt"))
+
+    if device.type == 'cpu':
+        updraft_exploiter.load_state_dict(
+            torch.load(updraft_exploiter_filepath,
+                       map_location='cpu'))
+    else:
+        updraft_exploiter.load_state_dict(
+            torch.load(updraft_exploiter_filepath))
 
     # instantiate agent
     ppo = PPO(waypoint_controller, updraft_exploiter, env)

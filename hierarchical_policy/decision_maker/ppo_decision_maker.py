@@ -4,9 +4,9 @@ from scipy.signal import lfilter
 
 import numpy as np
 from torch.utils.data import Dataset, TensorDataset
-from decision_maker import params_decision_maker
+from hierarchical_policy.decision_maker import params_decision_maker
 
-from decision_maker.model_decision_maker import DecisionMakerActorCritic
+from hierarchical_policy.decision_maker.model_decision_maker import DecisionMakerActorCritic
 
 # Choose device here
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

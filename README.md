@@ -1,4 +1,4 @@
-## Hierarchical Reinforcement Learning for Autonomous Cross-Country Soaring <img src="images/logo.png" align="right" width=100/>
+## Hierarchical Reinforcement Learning for Autonomous <img src="resources/images/logo.png" align="right" width=100/> <br/> Cross-Country Soaring 
 
 ### Overview
 Autonomous soaring constitutes an appealing task for applying reinforcement learning
@@ -16,7 +16,7 @@ and the flight test results can be found in our most recent paper:
 
 > Link to paper 
 
-![Dummy image](resources/images/title_image.png)
+![Dummy image](resources/images/title_image.PNG)
 
 <b>Flight test result from 24.09.2021</b>
 ### Getting started
@@ -34,7 +34,8 @@ scipy (1.6.2),
 pandas (1.1.3) and
 matplotlib (3.4.3).
 
-To register the gilder module in your virtual environment, navigate to this folder and run 
+To register the gilder module in your virtual environment run the following command 
+inside this project folder: 
 ```
 pip install -e glider
 ```

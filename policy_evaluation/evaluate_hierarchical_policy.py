@@ -25,7 +25,7 @@ ppo.model.actor.load_state_dict(torch.load(
     "../results_paper/policies/decision_maker_actor_final_30-October-2021_11-02.pt", map_location=torch.device('cpu')))
 _params_agent = params_decision_maker.AgentParameters()
 
-iterations = 1
-for plot_number in range(0, iterations):
+iterations = 30
+for plot_number in range(10, iterations):
     print("Running iteration number {}!".format(plot_number))
     run_episode.main(env, ppo, plot_number, _params_agent, validation_mask=True)

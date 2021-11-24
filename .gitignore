@@ -15,4 +15,4 @@ policy_evaluation/resultant_trajectory_iter_4000.png
 policy_evaluation/Samples/*
 rl_ccs_experiments
 .gitmodules
-
+*Samples*

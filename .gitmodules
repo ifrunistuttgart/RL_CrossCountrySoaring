@@ -1,0 +1,6 @@
+[submodule "ParticleFilter_UpdraftEstimator"]
+	path = ParticleFilter_UpdraftEstimator
+	url = https://github.com/ifrunistuttgart/ParticleFilter_UpdraftEstimator
+[submodule "updraft_estimator"]
+	path = updraft_estimator
+	url = https://github.com/ifrunistuttgart/ParticleFilter_UpdraftEstimator

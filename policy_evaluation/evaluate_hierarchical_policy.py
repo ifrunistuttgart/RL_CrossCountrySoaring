@@ -19,13 +19,13 @@ env = GliderEnv3D(agent='decision_maker')
 waypoint_controller = ControllerWrapper(env)
 updraft_exploiter = model_updraft_exploiter.UpdraftExploiterActorCritic().to(device)
 updraft_exploiter.load_state_dict(torch.load(
-    "../results_paper/policies/updraft_exploiter_actor_critic_final_17-October-2021_20-21.pt", map_location=torch.device('cpu')))
+    "../resources/results_paper/policies/updraft_exploiter_actor_critic_final_17-October-2021_20-21.pt", map_location=torch.device('cpu')))
 ppo = PPO(waypoint_controller, updraft_exploiter, env)
 ppo.model.actor.load_state_dict(torch.load(
-    "../results_paper/policies/decision_maker_actor_final_30-October-2021_11-02.pt", map_location=torch.device('cpu')))
+    "../resources/results_paper/policies/decision_maker_actor_final_30-October-2021_11-02.pt", map_location=torch.device('cpu')))
 _params_agent = params_decision_maker.AgentParameters()
 
-iterations = 30
-for plot_number in range(10, iterations):
+iterations = 10
+for plot_number in range(0, iterations):
     print("Running iteration number {}!".format(plot_number))
     run_episode.main(env, ppo, plot_number, _params_agent, validation_mask=True)

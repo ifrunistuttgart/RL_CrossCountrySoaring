@@ -263,6 +263,7 @@ class Wind(object):
         # calculate updraft velocity
         r = dist[upused]
         rr2 = r / r2
+        rr2 = np.clip(rr2, 0, 2)  # Clip r/r2 values above 2 to limit second term in Eq. 16
 
         if -position[2] < self._params_wind.ZI:
             ka, kb, kc, kd = self.get_updraft_shape(r1r2=r1r2)  # get shape coefficients

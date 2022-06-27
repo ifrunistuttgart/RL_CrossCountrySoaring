@@ -6,7 +6,7 @@ Cross-country soaring embraces a threefold tactical decision-making dilemma betw
 
 This repository includes a reinforcement learning framework for solving the tactical decision-making problem subject to cross-country soaring (by the example of the competition task of [GPS Triangle](https://gps-triangle.net/) racing). The framework was developed by researchers at the [Institute of Flight Mechanics and Controls (iFR)](https://www.ifr.uni-stuttgart.de/) at the University of Stuttgart. Alongside our [Particle-Filter-Based Multiple Updraft Estimator](https://github.com/ifrunistuttgart/ParticleFilter_UpdraftEstimator), the resultant overall policy was implemented on embedded hardware aboard an autonomous soaring aircraft and successfully flight-tested.
 
-![Autonomous soaring fligh test result](resources/images/title_image.PNG)
+![Autonomous soaring fligh test result](resources/images/ikura_thermalling_2022-11-03.png)
 
 More detailed information about the hierarchical reinforcement learning approach, the implementation, and the flight test results can be found in the associated paper listed below.
 

@@ -13,7 +13,7 @@ More detailed information about the hierarchical reinforcement learning approach
 ### Getting started
 This repository contains the full source code, which was used to train the agent. 
 The *glider* training environment is an extension of the [OpenAI gym](https://gym.openai.com/) library. 
-It implements a novel three degrees of freedom (3 DoF) model of the aircraft dynamics in the presence of an arbitrary wind field.
+It implements a novel three-degrees-of-freedom (3 DoF) model of the aircraft dynamics in the presence of an arbitrary wind field.
  
 #### Prerequisites
 To run the training environment, you need to install a virtual Python 3.8 environment with the following packages:

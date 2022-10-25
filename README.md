@@ -33,4 +33,6 @@ pip install -e glider
 ### Credits
 If you like to use our work or build upon the algorithms in an academic context, please cite:
 
+>Notter, S., Schimpf, F., Müller, G. & Fichter, W., "Hierarchical Reinforcement Learning Approach for Autonomous Cross-Country Soaring," AIAA Journal of Guidance, Control, and Dynamics, 2022. https://doi.org/10.2514/1.G006746
+
 >Notter, S., Schimpf, F., & Fichter, W., "Hierarchical Reinforcement Learning Approach Towards Autonomous Cross-Country Soaring," AIAA SciTech 2021 Forum. https://doi.org/10.2514/6.2021-2010
